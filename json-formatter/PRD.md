@@ -83,11 +83,9 @@ JSON Formatter is a client-side web tool for formatting, minifying, validating, 
 - **FR-8.1** File size (raw byte count, displayed in human-readable format: B, KB, MB)
 - **FR-8.2** Line count (of the formatted output)
 - **FR-8.3** Total key count (number of unique keys across all objects)
-- **FR-8.4** Total value count
-- **FR-8.5** Maximum nesting depth
-- **FR-8.6** Data type breakdown (count of strings, numbers, booleans, nulls, arrays, objects)
-- **FR-8.7** Display stats in a collapsible panel below the output area
-- **FR-8.8** Update stats in real time as JSON changes
+- **FR-8.4** Maximum nesting depth
+- **FR-8.5** Display stats in a collapsible panel below the output area
+- **FR-8.6** Update stats in real time as JSON changes
 
 ---
 
@@ -100,19 +98,12 @@ JSON Formatter is a client-side web tool for formatting, minifying, validating, 
 - For files over 1 MB, use virtualized rendering or lazy loading to maintain responsiveness
 - UI must remain responsive (no frame drops) during all operations
 
-### NFR-2: Accessibility
-
-- All interactive elements must be keyboard-navigable
-- ARIA labels on all buttons and controls
-- Sufficient color contrast ratios (WCAG 2.1 AA)
-- Screen reader support for error messages and status updates
-
-### NFR-3: Browser Support
+### NFR-2: Browser Support
 
 - Chrome, Firefox, Safari, Edge (latest two major versions)
 - Responsive layout: desktop (1024px+), tablet (768px-1023px), mobile (320px-767px)
 
-### NFR-4: Privacy
+### NFR-3: Privacy
 
 - All processing happens client-side; no data is sent to any server
 - No analytics or tracking without explicit user consent
@@ -144,17 +135,6 @@ JSON Formatter is a client-side web tool for formatting, minifying, validating, 
 2. User adjusts settings (indent size, key sorting)
 3. User clicks Format
 4. User clicks Download to save the formatted file
-
----
-
-## Out of Scope (v1)
-
-- JSON Schema validation
-- JSON diff/compare between two documents
-- JSON-to-CSV or JSON-to-YAML conversion
-- Collaborative editing or sharing via URL
-- Syntax-aware editing (autocomplete, bracket matching) in the input panel
-- JSONPath or JMESPath query execution
 
 ---
 
