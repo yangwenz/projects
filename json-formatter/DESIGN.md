@@ -5,21 +5,25 @@
 The app is a single-route Next.js client-side application. All components are `"use client"` -- there is no server-side data fetching or processing. Heavy JSON operations run in a **Web Worker** to keep the UI responsive.
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    page.tsx                         │
-│  ┌───────────────────┐  ┌────────────────────────┐  │
-│  │  InputPanel       │  │   OutputPanel          │  │
-│  │ - textarea editor │  │  - CodeView (default)  │  │
-│  │ - file drop zone  │  │  - TreeView            │  │
-│  │ - line numbers    │  │  - StatsPanel          │  │
-│  └────────┬──────────┘  └────────▲───────────────┘  │
-│           │                      │                  │
-│           ▼                      │                  │
-│  ┌─────────────────────────────────────────────┐    │
-│  │         useJsonWorker (hook)                │    │
-│  │   debounce 300ms → postMessage → onmessage  │    │
-│  └──────────────────┬──────────────────────────┘    │
-└─────────────────────┼───────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                    page.tsx                          │
+│  ┌────────────────────────────────────────────────┐  │
+│  │  Toolbar (Upload, Paste, Clear, Copy, DL, Min) │  │
+│  ├───────────────────┬────────────────────────────┤  │
+│  │  InputPanel       │   OutputPanel              │  │
+│  │ - textarea editor │  - CodeView (default)      │  │
+│  │ - file drop zone  │  - TreeView                │  │
+│  │ - line numbers    │                            │  │
+│  ├───────────────────┴────────────────────────────┤  │
+│  │  StatusBar  (validity left │ stats right)      │  │
+│  └────────┬───────────────────────▲───────────────┘  │
+│           │                       │                  │
+│           ▼                       │                  │
+│  ┌──────────────────────────────────────────────┐    │
+│  │         useJsonWorker (hook)                 │    │
+│  │   debounce 300ms → postMessage → onmessage   │    │
+│  └──────────────────┬───────────────────────────┘    │
+└─────────────────────┼────────────────────────────────┘
                       │ Worker thread
               ┌───────▼───────┐
               │ json.worker   │
@@ -36,11 +40,12 @@ The app is a single-route Next.js client-side application. All components are `"
 | Module | Responsibility |
 |---|---|
 | **JSON Worker** | Parse, validate, format, minify, compute stats. Runs off the main thread. |
-| **InputPanel** | Text editor with line numbers, error highlighting, file upload/drag-drop. |
+| **Toolbar** | Single row of action buttons above the panels: Upload, Paste, Clear, Copy, Download, Minify. |
+| **InputPanel** | Text editor with line numbers, error highlighting, file drop zone. |
 | **CodeView** | Syntax-highlighted formatted JSON output with line numbers. |
 | **TreeView** | Collapsible tree explorer. Click a node to copy its JSON path. |
-| **StatsPanel** | Displays input size, line count, key count, max depth. |
-| **SettingsDrawer** | Indent size, key sorting, auto-format toggle. Persists to localStorage. |
+| **StatusBar** | Validation status (left) + stats: size, line count, key count, max depth (right). Always visible. |
+| **SettingsPopover** | Indent size, key sorting, auto-format toggle. Persists to localStorage. |
 
 ---
 
@@ -51,59 +56,71 @@ The app is a single-route Next.js client-side application. All components are `"
 Desktop (1024px+): side-by-side two-panel layout. Tablet/mobile: stacked vertically, input on top.
 
 ```
-┌───────────────────────────────────────────────────────┐
-│  [JSON Formatter]                            [⚙]      │  ← Header
-├──────────────────────────┬────────────────────────────┤
-│  Input                   │  Output                    │
-│  ┌────────────────────┐  │  [Code View] [Tree View]   │  ← View toggle tabs
-│  │ 1 │ {              │  │  ┌──────────────────────┐  │
-│  │ 2 │   "name": ...  │  │  │ syntax-highlighted   │  │
-│  │ 3 │ }              │  │  │ output or tree view  │  │
-│  │   │                │  │  │                      │  │
-│  └────────────────────┘  │  └──────────────────────┘  │
-│  [Upload] [Paste] [Clear]│  [Copy] [Download] [Minify]│  ← Toolbars
-│                          │                            │
-│  ● Valid JSON            │  ▼ Stats                   │  ← Status / Stats
-│                          │    Size: 1.2 KB            │
-│                          │    Keys: 24  Depth: 4      │
-├──────────────────────────┴────────────────────────────┤
-│                    Settings Drawer (slides from right)│
-│  Indent: [2] [4] [Tab]   Sort keys: [Off] [A-Z] [Z-A] │
-│  Auto-format on paste: [On]                           │
-└───────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│  [JSON Formatter]                                     [⚙]  │  ← Header + gear icon
+├────────────────────────────────────────────────────────────┤
+│  [Upload] [Paste] [Clear]  |  [Copy] [Download] [Minify]   │  ← Toolbar
+├────────────────────────────┬───────────────────────────────┤
+│  Input                     │  Output                       │
+│  ┌──────────────────────┐  │  [Code View] [Tree View]      │  ← View toggle tabs
+│  │ 1 │ {                │  │  ┌─────────────────────────┐  │
+│  │ 2 │   "name": ...    │  │  │ syntax-highlighted      │  │
+│  │ 3 │ }                │  │  │ output or tree view     │  │
+│  │   │                  │  │  │                         │  │
+│  └──────────────────────┘  │  └─────────────────────────┘  │
+├────────────────────────────┴───────────────────────────────┤
+│  ● Valid JSON                    1.2 KB · 42 lines · 24    │  ← StatusBar
+│                                  keys · depth 4            │
+├────────────────────────────────────────────────────────────┤
+│  ┌─ Settings Popover (anchored to gear icon) ──────────┐   │
+│  │ Indent: [2] [4] [Tab]  Sort keys: [Off] [A-Z] [Z-A] │   │
+│  │ Auto-format on paste: [On]                          │   │
+│  └─────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────┘
 ```
+
+### Toolbar
+
+- A single row spanning the full width, positioned between the header and the panels.
+- Left group (input actions): Upload, Paste, Clear. Right group (output actions): Copy, Download, Minify.
+- Upload opens a native file picker filtered to `.json`. Paste reads from the clipboard. Clear resets all state.
+- Copy writes the current output to the clipboard. Download saves it as a `.json` file. Minify toggles minified output.
 
 ### Input Panel
 
 - A `<textarea>` with a gutter showing line numbers, rendered via a synchronized overlay div.
 - On validation error, the error line is highlighted with a red background in the gutter.
 - Drag-and-drop: the entire panel is a drop zone. On dragover, show a visual overlay. On drop, read the file and populate the editor.
-- File upload button opens a native file picker filtered to `.json`.
 - Paste detection: on the `paste` event, if auto-format is enabled, trigger a worker format after the debounce.
 
 ### Output Panel
 
 - **Code View** (default): A read-only div with syntax-highlighted HTML spans. Each token type (key, string, number, boolean, null, punctuation) gets a distinct color via Tailwind classes. Line numbers in a gutter.
 - **Tree View**: A recursive component. Each node shows: expand/collapse toggle (for objects/arrays), the key or index label, a type badge, and the value (for leaves). Click a node row to copy its path (`$.foo.bar[0]`) and show a toast.
-- **Minify button**: Sends a minify request to the worker. Output switches to the minified string. Any subsequent input change reverts to formatted mode.
-- **Stats panel**: Collapsible via a chevron toggle. Shows input size (B/KB/MB), line count, key count, max depth. Updated on every successful parse.
 
-### Settings Drawer
+### Status Bar
 
-- Triggered by the gear icon in the header. Slides in from the right as an overlay panel.
+- A single row below the input and output panels, always visible.
+- **Left side**: Validation status -- a green dot + "Valid JSON" on success, or a red dot + error message with line:column on failure.
+- **Right side**: Stats -- input size (B/KB/MB), line count, key count, max depth. Separated by middot (`·`) delimiters. Updated on every successful parse. Shows dashes (`—`) when input is empty or invalid.
+
+### Settings Popover
+
+- Triggered by the gear icon in the header. Renders as a popover dialog anchored below the icon.
 - All settings are stored in a React context backed by `localStorage`. Changes take effect immediately -- the current output re-formats with the new settings.
+- Clicking outside the popover or pressing Escape closes it.
 
 ### Interactions Summary
 
 | User Action | System Response |
 |---|---|
-| Type in input | Debounce 300ms, then send to worker for validate + format. Update output + status. |
+| Type in input | Debounce 300ms, then send to worker for validate + format. Update output + status bar. |
 | Paste into input | If auto-format on, same as typing but immediate (paste replaces content). |
 | Drop/upload file | Read file contents into input textarea. Trigger validate + format. |
-| Click Minify | Send minify request to worker. Show minified output + size comparison. |
+| Click Minify | Send minify request to worker. Show minified output + size comparison in status bar. |
 | Click Copy | Copy output text to clipboard. Show toast. |
 | Click Download | Trigger a download of the output as `.json`. |
-| Click Clear | Reset input, output, stats, status to empty state. |
+| Click Clear | Reset input, output, status bar to empty state. |
 | Click tree node | Copy JSON path to clipboard. Show toast. |
 | Change settings | Re-format current input with new settings. Persist to localStorage. |
 
@@ -121,14 +138,14 @@ src/
 │
 ├── components/
 │   ├── Header.tsx              # App title + settings gear icon
+│   ├── Toolbar.tsx             # Action buttons: Upload, Paste, Clear, Copy, Download, Minify
 │   ├── InputPanel.tsx          # Textarea editor, line numbers, drop zone
-│   ├── OutputPanel.tsx         # Wraps CodeView/TreeView + tabs + toolbar
+│   ├── OutputPanel.tsx         # Wraps CodeView/TreeView + tabs
 │   ├── CodeView.tsx            # Syntax-highlighted formatted output
 │   ├── TreeView.tsx            # Recursive collapsible tree
 │   ├── TreeNode.tsx            # Single node in the tree
-│   ├── StatsPanel.tsx          # Collapsible stats display
-│   ├── StatusBar.tsx           # Valid/invalid indicator with error details
-│   ├── SettingsDrawer.tsx      # Slide-out settings panel
+│   ├── StatusBar.tsx           # Validation status (left) + stats (right), always visible
+│   ├── SettingsPopover.tsx     # Popover dialog for settings
 │   └── Toast.tsx               # Notification toast for copy confirmations
 │
 ├── workers/
