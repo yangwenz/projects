@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useState } from "react";
+import { useRef, useMemo, useState, useLayoutEffect, useEffect, useCallback } from "react";
 
 interface InputPanelProps {
   value: string;
@@ -22,12 +22,48 @@ export default function InputPanel({
   autoFormatOnPaste,
 }: InputPanelProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mirrorRef = useRef<HTMLDivElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [lineHeights, setLineHeights] = useState<number[]>([]);
 
-  const lineNumbers = useMemo(() => {
-    const count = value ? value.split("\n").length : 1;
-    return Array.from({ length: count }, (_, i) => i + 1);
-  }, [value]);
+  const lines = useMemo(() => (value ? value.split("\n") : [""]), [value]);
+
+  const lineNumbers = useMemo(
+    () => Array.from({ length: lines.length }, (_, i) => i + 1),
+    [lines],
+  );
+
+  const measureLines = useCallback(() => {
+    const textarea = textareaRef.current;
+    const mirror = mirrorRef.current;
+    if (!textarea || !mirror) return;
+
+    const cs = getComputedStyle(textarea);
+    const contentWidth =
+      textarea.clientWidth -
+      parseFloat(cs.paddingLeft) -
+      parseFloat(cs.paddingRight);
+    mirror.style.width = `${contentWidth}px`;
+
+    const heights: number[] = [];
+    const children = mirror.children;
+    for (let i = 0; i < children.length; i++) {
+      heights.push((children[i] as HTMLElement).offsetHeight);
+    }
+    setLineHeights(heights);
+  }, []);
+
+  useLayoutEffect(() => {
+    measureLines();
+  }, [value, measureLines]);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const observer = new ResizeObserver(() => measureLines());
+    observer.observe(textarea);
+    return () => observer.disconnect();
+  }, [measureLines]);
 
   return (
     <div
@@ -47,11 +83,27 @@ export default function InputPanel({
           <span className="text-blue-600 font-medium">Drop JSON file here</span>
         </div>
       )}
+      <div
+        ref={mirrorRef}
+        aria-hidden
+        className="font-mono text-sm leading-5"
+        style={{
+          position: "absolute",
+          visibility: "hidden",
+          whiteSpace: "pre-wrap",
+          overflowWrap: "break-word",
+        }}
+      >
+        {lines.map((line, i) => (
+          <div key={i}>{line || "\u00a0"}</div>
+        ))}
+      </div>
       <div className="flex flex-1 overflow-auto font-mono text-sm">
         <div className="select-none bg-zinc-50 px-2 py-3 text-right text-zinc-400 leading-5">
-          {lineNumbers.map((n) => (
+          {lineNumbers.map((n, i) => (
             <div
               key={n}
+              style={lineHeights[i] ? { height: lineHeights[i] } : undefined}
               className={`px-1 ${
                 errorLine === n
                   ? "bg-red-100 text-red-500 rounded"

@@ -31,8 +31,16 @@ function loadSettings(): Settings {
   return DEFAULT_SETTINGS;
 }
 
+let cachedSnapshot: Settings = DEFAULT_SETTINGS;
+let cachedRaw: string | null = null;
+
 function getSnapshot(): Settings {
-  return loadSettings();
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw !== cachedRaw) {
+    cachedRaw = raw;
+    cachedSnapshot = loadSettings();
+  }
+  return cachedSnapshot;
 }
 
 function getServerSnapshot(): Settings {

@@ -3,15 +3,13 @@
 import { useCallback, useRef } from "react";
 
 interface UseFileHandlerOptions {
-  onFileContent: (content: string, filename: string) => void;
+  onFileContent: (content: string) => void;
   getOutput: () => string;
-  filename: string;
 }
 
 export function useFileHandler({
   onFileContent,
   getOutput,
-  filename,
 }: UseFileHandlerOptions) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -24,7 +22,7 @@ export function useFileHandler({
       if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
-        onFileContent(reader.result as string, file.name);
+        onFileContent(reader.result as string);
       };
       reader.readAsText(file);
     };
@@ -39,10 +37,10 @@ export function useFileHandler({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = filename;
+    a.download = "download.json";
     a.click();
     URL.revokeObjectURL(url);
-  }, [getOutput, filename]);
+  }, [getOutput]);
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
@@ -51,7 +49,7 @@ export function useFileHandler({
       if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
-        onFileContent(reader.result as string, file.name);
+        onFileContent(reader.result as string);
       };
       reader.readAsText(file);
     },

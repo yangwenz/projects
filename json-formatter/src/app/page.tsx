@@ -18,7 +18,6 @@ function JsonFormatterApp() {
     useJsonWorker();
 
   const [input, setInput] = useState("");
-  const [filename, setFilename] = useState("formatted.json");
   const [isMinified, setIsMinified] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({
@@ -69,9 +68,8 @@ function JsonFormatterApp() {
   );
 
   const handleFileContent = useCallback(
-    (content: string, name: string) => {
+    (content: string) => {
       setInput(content);
-      setFilename(name);
       setIsMinified(false);
       triggerFormat(content);
     },
@@ -90,7 +88,6 @@ function JsonFormatterApp() {
   const { onUpload, onDownload, onDrop, onDragOver } = useFileHandler({
     onFileContent: handleFileContent,
     getOutput,
-    filename,
   });
 
   const handlePaste = useCallback(async () => {
@@ -106,7 +103,6 @@ function JsonFormatterApp() {
 
   const handleClear = useCallback(() => {
     setInput("");
-    setFilename("formatted.json");
     setIsMinified(false);
     reset();
   }, [reset]);
