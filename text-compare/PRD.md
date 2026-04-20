@@ -49,20 +49,22 @@ Default mode: **Word**
 
 ### 4. Color-Coded Diff View
 
-A unified or side-by-side diff output area below or overlaid on the editors:
+Diffs are shown as inline highlighting within the editors themselves — there is no separate output panel.
 
-| Color | Meaning |
-|-------|---------|
-| Green (background) | Added content |
-| Red (background) | Removed content |
-| Yellow (background) | Modified content (word/char level changes within a line) |
+| Color | Meaning | Applies in |
+|-------|---------|------------|
+| Green (background) | Added content | All modes |
+| Red (background) | Removed content | All modes |
+| Yellow (background) | Modified content (word/char level changes within a line) | Word and Character modes only |
+
+In **Line** mode, only green and red are used — changed lines are shown as a deletion (red) in the original editor and an addition (green) in the modified editor.
 
 - Colors must meet WCAG AA contrast requirements
 - Optional dark mode support (future consideration)
 
 ### 5. Synced Scrolling
 
-- Both editor panels scroll together vertically
+- Both editor panels scroll together vertically, aligned by diff chunks (matching regions stay side-by-side; insertions/deletions introduce padding in the opposite panel)
 - Scroll sync can be toggled on/off via a button/icon
 - Default: enabled
 
@@ -75,7 +77,7 @@ A unified or side-by-side diff output area below or overlaid on the editors:
 ### 7. Swap and Clear Operations
 
 - **Swap**: Exchanges content between left and right editors (button with swap icon)
-- **Clear**: Clears both editors and resets diff state (with confirmation if content exists)
+- **Clear**: Clears both editors and resets diff state. If content exists, show a toast notification with an "Undo" action (auto-dismisses after 5 seconds)
 
 ### 8. File Upload
 
@@ -120,7 +122,7 @@ Displayed in a stats bar (below the editors or in a footer):
 
 - **Additions**: Number of added lines/words/chars (depending on mode)
 - **Deletions**: Number of removed lines/words/chars
-- **Modifications**: Number of modified lines
+- **Modifications**: Number of modified segments (word/char modes only — in line mode, changes are counted as additions + deletions)
 - **Line counts**: Total lines in each editor
 - **Status message**: e.g., "Texts are identical", "4 differences found", "Comparing…"
 
