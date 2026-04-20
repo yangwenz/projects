@@ -162,8 +162,13 @@ src/
 │   ├── tree-builder.ts         # Converts parsed JSON → tree node structure
 │   └── types.ts                # Shared TypeScript interfaces
 │
-└── contexts/
-    └── SettingsContext.tsx      # React context + provider for settings
+├── contexts/
+│   └── SettingsContext.tsx      # React context + provider for settings
+│
+└── __tests__/
+    ├── json-engine.test.ts     # Tests for parse, format, minify, validate, stats
+    ├── syntax-highlight.test.ts # Tests for tokenizer output
+    └── tree-builder.test.ts    # Tests for tree node construction
 ```
 
 ### Key Decisions
@@ -236,3 +241,66 @@ The `minify` request is separate because it's user-triggered (button click), not
 - **Max depth**: Track depth during the walk, record the maximum.
 
 All operations run in a single pass where possible. A `format` request does: parse → validate → sort → stringify → stats, returning one combined result object.
+
+---
+
+## Testing
+
+### Framework
+
+Jest with `ts-jest` for TypeScript support. Tests run via `npm test`. Configuration lives in `jest.config.ts` at the project root.
+
+### Test Location
+
+All tests live in `src/__tests__/`, mirroring the module they cover. Only the pure functions in `lib/` are unit-tested — components and hooks are validated through manual browser testing since the app is entirely client-side and UI-driven.
+
+### Test Coverage
+
+#### `json-engine.test.ts`
+
+**validate**
+- Valid JSON returns `{ valid: true }` with no error
+- Missing closing brace returns error with correct line and column
+- Trailing comma returns parse error
+- Empty string returns error
+- Non-JSON primitives (bare words like `undefined`) return error
+
+**format**
+- Formats minified JSON with 2-space indent (default)
+- Formats with 4-space indent
+- Formats with tab indent
+- Sorts keys ascending: `{"b":1,"a":2}` → `{"a":2,"b":1}` formatted
+- Sorts keys descending
+- Preserves all JSON types: strings, numbers, booleans, null, nested objects, arrays
+- Handles deeply nested structures (10+ levels)
+
+**minify**
+- Strips all whitespace from formatted JSON
+- Returns correct original and minified byte counts
+- Round-trips: `minify(format(input))` produces same data as `minify(input)`
+
+**stats**
+- Computes correct byte size (including multi-byte UTF-8 characters)
+- Counts lines in formatted output
+- Counts all keys across nested objects (including duplicates at different levels)
+- Reports max depth: flat object = 1, nested object = 2, etc.
+- Empty object `{}` returns key count 0, depth 1
+- Empty array `[]` returns key count 0, depth 1
+
+#### `syntax-highlight.test.ts`
+
+- Tokenizes string values with correct `string` type
+- Tokenizes number values (integer, float, negative, exponent)
+- Tokenizes `true`, `false`, `null` as distinct types
+- Tokenizes object keys as `key` type
+- Tokenizes braces, brackets, colons, commas as `punctuation`
+- Full round-trip: concatenating all token texts reproduces the original string
+
+#### `tree-builder.test.ts`
+
+- Builds a single root node for a primitive value
+- Object produces child nodes with key labels
+- Array produces child nodes with index labels (`[0]`, `[1]`, ...)
+- Nested structures produce correct parent-child hierarchy
+- Each node includes the correct type tag (`string`, `number`, `boolean`, `null`, `object`, `array`)
+- Generates correct JSON paths: `$.foo.bar[0].baz`
