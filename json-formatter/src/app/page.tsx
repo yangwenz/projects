@@ -1,65 +1,206 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useCallback, useRef, useEffect } from "react";
+import { SettingsProvider, useSettingsContext } from "@/contexts/SettingsContext";
+import { useJsonWorker } from "@/hooks/useJsonWorker";
+import { useFileHandler } from "@/hooks/useFileHandler";
+import Header from "@/components/Header";
+import Toolbar from "@/components/Toolbar";
+import InputPanel from "@/components/InputPanel";
+import OutputPanel from "@/components/OutputPanel";
+import StatusBar from "@/components/StatusBar";
+import SettingsPopover from "@/components/SettingsPopover";
+import Toast from "@/components/Toast";
+
+function JsonFormatterApp() {
+  const { settings } = useSettingsContext();
+  const { formatResult, minifyResult, sendFormat, sendMinify, reset } =
+    useJsonWorker();
+
+  const [input, setInput] = useState("");
+  const [filename, setFilename] = useState("formatted.json");
+  const [isMinified, setIsMinified] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({
+    message: "",
+    visible: false,
+  });
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef(input);
+
+  useEffect(() => {
+    inputRef.current = input;
+  }, [input]);
+
+  const triggerFormat = useCallback(
+    (value: string) => {
+      if (!value.trim()) {
+        reset();
+        return;
+      }
+      sendFormat(value, settings.indent, settings.sortKeys);
+    },
+    [sendFormat, settings.indent, settings.sortKeys, reset]
+  );
+
+  const debouncedFormat = useCallback(
+    (value: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => triggerFormat(value), 300);
+    },
+    [triggerFormat]
+  );
+
+  // Re-format when settings change
+  useEffect(() => {
+    if (inputRef.current.trim()) {
+      triggerFormat(inputRef.current);
+    }
+  }, [settings.indent, settings.sortKeys, triggerFormat]);
+
+  const handleInputChange = useCallback(
+    (value: string) => {
+      setInput(value);
+      setIsMinified(false);
+      debouncedFormat(value);
+    },
+    [debouncedFormat]
+  );
+
+  const handleFileContent = useCallback(
+    (content: string, name: string) => {
+      setInput(content);
+      setFilename(name);
+      setIsMinified(false);
+      triggerFormat(content);
+    },
+    [triggerFormat]
+  );
+
+  const showToast = useCallback((message: string) => {
+    setToast({ message, visible: true });
+  }, []);
+
+  const getOutput = useCallback(() => {
+    if (isMinified && minifyResult) return minifyResult.minified;
+    return formatResult?.formatted ?? "";
+  }, [isMinified, minifyResult, formatResult]);
+
+  const { onUpload, onDownload, onDrop, onDragOver } = useFileHandler({
+    onFileContent: handleFileContent,
+    getOutput,
+    filename,
+  });
+
+  const handlePaste = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setInput(text);
+      setIsMinified(false);
+      triggerFormat(text);
+    } catch {
+      // clipboard read may fail; the user can still paste via Ctrl+V
+    }
+  }, [triggerFormat]);
+
+  const handleClear = useCallback(() => {
+    setInput("");
+    setFilename("formatted.json");
+    setIsMinified(false);
+    reset();
+  }, [reset]);
+
+  const handleCopy = useCallback(async () => {
+    const output = getOutput();
+    if (!output) return;
+    await navigator.clipboard.writeText(output);
+    showToast("Copied to clipboard");
+  }, [getOutput, showToast]);
+
+  const handleMinify = useCallback(() => {
+    if (!input.trim()) return;
+    if (isMinified) {
+      setIsMinified(false);
+      return;
+    }
+    sendMinify(input);
+    setIsMinified(true);
+  }, [input, isMinified, sendMinify]);
+
+  const handleCopyPath = useCallback(
+    async (path: string) => {
+      await navigator.clipboard.writeText(path);
+      showToast(`Copied: ${path}`);
+    },
+    [showToast]
+  );
+
+  const handlePasteEvent = useCallback(() => {
+    // Triggered from textarea paste event — formatting happens via debounce
+  }, []);
+
+  const errorLine =
+    formatResult?.validation && !formatResult.validation.valid
+      ? formatResult.validation.line
+      : null;
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <Header onToggleSettings={() => setSettingsOpen((o) => !o)} />
+      <SettingsPopover
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
+      <Toolbar
+        onUpload={onUpload}
+        onPaste={handlePaste}
+        onClear={handleClear}
+        onCopy={handleCopy}
+        onDownload={onDownload}
+        onMinify={handleMinify}
+        isMinified={isMinified}
+      />
+      <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
+        <div className="flex flex-1 flex-col overflow-hidden border-r border-zinc-200">
+          <InputPanel
+            value={input}
+            onChange={handleInputChange}
+            onPaste={handlePasteEvent}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            errorLine={errorLine}
+            autoFormatOnPaste={settings.autoFormatOnPaste}
+          />
+        </div>
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <OutputPanel
+            tokens={formatResult?.tokens ?? []}
+            parsed={formatResult?.parsed}
+            minifiedOutput={isMinified ? minifyResult?.minified ?? null : null}
+            onCopyPath={handleCopyPath}
+          />
+        </div>
+      </div>
+      <StatusBar
+        validation={formatResult?.validation ?? null}
+        stats={formatResult?.stats ?? null}
+        minifyResult={isMinified ? minifyResult ?? null : null}
+        hasInput={input.trim().length > 0}
+      />
+      <Toast
+        message={toast.message}
+        visible={toast.visible}
+        onHide={() => setToast((t) => ({ ...t, visible: false }))}
+      />
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <SettingsProvider>
+      <JsonFormatterApp />
+    </SettingsProvider>
   );
 }
