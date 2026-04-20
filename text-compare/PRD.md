@@ -70,7 +70,6 @@ A unified or side-by-side diff output area below or overlaid on the editors:
 
 - **Previous** / **Next** buttons to jump between differences
 - Counter display showing current position: e.g., "3 / 7"
-- Keyboard shortcuts: `Alt+Up` (previous), `Alt+Down` (next)
 - Current change is highlighted with a stronger border or outline
 
 ### 7. Swap and Clear Operations
@@ -127,27 +126,6 @@ Displayed in a stats bar (below the editors or in a footer):
 
 ---
 
-## UI Layout
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  Header: Title | Granularity Toggle | Settings | Export  │
-├────────────────────────┬────────────────────────────────┤
-│  Original Editor       │  Modified Editor               │
-│  [Upload] [Clear]      │  [Upload] [Clear]              │
-│                        │                                │
-│  (line numbers)        │  (line numbers)                │
-│  (editable text area)  │  (editable text area)          │
-│                        │                                │
-├────────────────────────┴────────────────────────────────┤
-│  Navigation: [◀ Prev] [3 / 7] [Next ▶]  |  [Swap]     │
-├─────────────────────────────────────────────────────────┤
-│  Stats: +12 added | -3 removed | ~5 modified | 45 lines │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
 ## Technical Constraints
 
 - **Framework**: Next.js (as per project setup)
@@ -156,13 +134,3 @@ Displayed in a stats bar (below the editors or in a footer):
 - **Performance**: Handle files up to 5 MB / ~100k lines without freezing the UI
 - **Browser support**: Chrome, Firefox, Safari, Edge (latest 2 versions)
 - **Responsive**: Functional on tablet-width screens; editors stack vertically on mobile
-
----
-
-## Non-Goals (Out of Scope)
-
-- Syntax highlighting for code
-- Three-way merge
-- Collaborative editing
-- File versioning or history
-- Backend storage or user accounts
