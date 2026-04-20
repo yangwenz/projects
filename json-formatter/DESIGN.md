@@ -6,17 +6,17 @@ The app is a single-route Next.js client-side application. All components are `"
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    page.tsx                          │
+│                    page.tsx                         │
 │  ┌───────────────────┐  ┌────────────────────────┐  │
-│  │   InputPanel       │  │   OutputPanel          │  │
-│  │  - textarea editor │  │  - CodeView (default)  │  │
-│  │  - file drop zone  │  │  - TreeView            │  │
-│  │  - line numbers    │  │  - StatsPanel          │  │
+│  │  InputPanel       │  │   OutputPanel          │  │
+│  │ - textarea editor │  │  - CodeView (default)  │  │
+│  │ - file drop zone  │  │  - TreeView            │  │
+│  │ - line numbers    │  │  - StatsPanel          │  │
 │  └────────┬──────────┘  └────────▲───────────────┘  │
-│           │                      │                   │
-│           ▼                      │                   │
+│           │                      │                  │
+│           ▼                      │                  │
 │  ┌─────────────────────────────────────────────┐    │
-│  │         useJsonWorker (hook)                 │    │
+│  │         useJsonWorker (hook)                │    │
 │  │   debounce 300ms → postMessage → onmessage  │    │
 │  └──────────────────┬──────────────────────────┘    │
 └─────────────────────┼───────────────────────────────┘
@@ -51,26 +51,26 @@ The app is a single-route Next.js client-side application. All components are `"
 Desktop (1024px+): side-by-side two-panel layout. Tablet/mobile: stacked vertically, input on top.
 
 ```
-┌──────────────────────────────────────────────────────┐
-│  [JSON Formatter]                            [⚙]     │  ← Header
-├──────────────────────────┬───────────────────────────┤
-│  Input                   │  Output                   │
-│  ┌────────────────────┐  │  [Code View] [Tree View]  │  ← View toggle tabs
-│  │ 1 │ {              │  │  ┌──────────────────────┐ │
-│  │ 2 │   "name": ...  │  │  │ syntax-highlighted   │ │
-│  │ 3 │ }              │  │  │ output or tree view   │ │
-│  │   │                │  │  │                       │ │
-│  └────────────────────┘  │  └──────────────────────┘ │
+┌───────────────────────────────────────────────────────┐
+│  [JSON Formatter]                            [⚙]      │  ← Header
+├──────────────────────────┬────────────────────────────┤
+│  Input                   │  Output                    │
+│  ┌────────────────────┐  │  [Code View] [Tree View]   │  ← View toggle tabs
+│  │ 1 │ {              │  │  ┌──────────────────────┐  │
+│  │ 2 │   "name": ...  │  │  │ syntax-highlighted   │  │
+│  │ 3 │ }              │  │  │ output or tree view  │  │
+│  │   │                │  │  │                      │  │
+│  └────────────────────┘  │  └──────────────────────┘  │
 │  [Upload] [Paste] [Clear]│  [Copy] [Download] [Minify]│  ← Toolbars
 │                          │                            │
 │  ● Valid JSON            │  ▼ Stats                   │  ← Status / Stats
 │                          │    Size: 1.2 KB            │
 │                          │    Keys: 24  Depth: 4      │
-├──────────────────────────┴───────────────────────────┤
+├──────────────────────────┴────────────────────────────┤
 │                    Settings Drawer (slides from right)│
-│  Indent: [2] [4] [Tab]   Sort keys: [Off] [A-Z] [Z-A]│
+│  Indent: [2] [4] [Tab]   Sort keys: [Off] [A-Z] [Z-A] │
 │  Auto-format on paste: [On]                           │
-└──────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────┘
 ```
 
 ### Input Panel
