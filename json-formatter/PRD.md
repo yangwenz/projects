@@ -27,12 +27,12 @@ JSON Formatter is a client-side web tool for formatting, minifying, validating, 
 - **FR-1.1** Format JSON with configurable indentation (2 spaces, 4 spaces, tab)
 - **FR-1.2** Optionally sort object keys alphabetically (ascending/descending)
 - **FR-1.3** Preserve valid JSON data types (strings, numbers, booleans, null, arrays, objects)
-- **FR-1.4** Display formatted output in real time as the user types or pastes
+- **FR-1.4** Display formatted output after validation completes (shares the 300ms debounce from FR-3.5)
 
 ### FR-2: JSON Minification
 
 - **FR-2.1** Remove all unnecessary whitespace, newlines, and indentation from JSON
-- **FR-2.2** One-click minify button that replaces the output with the minified result
+- **FR-2.2** One-click minify button that replaces the output with the minified result; any subsequent edit to the input reverts the output to formatted mode
 - **FR-2.3** Show the size reduction (original vs. minified byte count)
 
 ### FR-3: JSON Validation
@@ -59,14 +59,14 @@ JSON Formatter is a client-side web tool for formatting, minifying, validating, 
 - **FR-5.1** Display formatted JSON with syntax highlighting
 - **FR-5.2** Color-code by type: strings, numbers, booleans, null values, keys, punctuation
 - **FR-5.3** Show line numbers in the gutter
-- **FR-5.4** Support toggling between Tree View and Code View
+- **FR-5.4** Support toggling between Tree View and Code View; Code View is the default
 
 ### FR-6: Input/Output Operations
 
 - **FR-6.1** Accept JSON input via a text editor area
 - **FR-6.2** Support file upload (`.json` files) via a file picker and drag-and-drop
 - **FR-6.3** Copy formatted/minified output to clipboard with a single click
-- **FR-6.4** Download output as a `.json` file with a configurable filename
+- **FR-6.4** Download output as a `.json` file; default filename is the uploaded filename or `formatted.json` for pasted input
 - **FR-6.5** Clear button to reset all input and output
 - **FR-6.6** Paste detection with optional auto-format (see FR-7.3)
 
@@ -80,9 +80,9 @@ JSON Formatter is a client-side web tool for formatting, minifying, validating, 
 
 ### FR-8: Statistics
 
-- **FR-8.1** File size (raw byte count, displayed in human-readable format: B, KB, MB)
-- **FR-8.2** Line count (of the formatted output)
-- **FR-8.3** Total key count (number of unique keys across all objects)
+- **FR-8.1** Input size (raw byte count of the input, displayed in human-readable format: B, KB, MB)
+- **FR-8.2** Line count (always based on the formatted output, regardless of whether minified view is active)
+- **FR-8.3** Total key count (all key occurrences across all objects, including duplicates at different nesting levels)
 - **FR-8.4** Maximum nesting depth
 - **FR-8.5** Display stats in a collapsible panel below the output area
 - **FR-8.6** Update stats in real time as JSON changes
@@ -95,7 +95,7 @@ JSON Formatter is a client-side web tool for formatting, minifying, validating, 
 
 - Format/minify operations must complete in under 200ms for files up to 1 MB
 - Tree view must render in under 500ms for files up to 1 MB
-- For files over 1 MB, use virtualized rendering or lazy loading to maintain responsiveness
+- For files 1-10 MB, use virtualized rendering or lazy loading; operations must complete in under 2 seconds
 - UI must remain responsive (no frame drops) during all operations
 
 ### NFR-2: Browser Support
