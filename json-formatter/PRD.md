@@ -120,30 +120,6 @@ JSON Formatter is a client-side web tool for formatting, minifying, validating, 
 
 ---
 
-## UI Layout
-
-```
-+---------------------------------------------------------------+
-|  Header: Logo / Title              [Settings]  [Theme Toggle] |
-+---------------------------------------------------------------+
-|                    |                                           |
-|   Input Panel      |   Output Panel                           |
-|                    |                                           |
-|   [Text Editor]    |   [Tree View] | [Code View]  (tab toggle)|
-|                    |                                           |
-|   [Upload] [Paste] |   [Copy] [Download] [Clear]              |
-|                    |                                           |
-+---------------------------------------------------------------+
-|  Toolbar: [Format] [Minify] [Validate]                        |
-+---------------------------------------------------------------+
-|  Stats Panel (collapsible)                                    |
-|  Size: 1.2 KB | Lines: 42 | Keys: 15 | Depth: 4             |
-+---------------------------------------------------------------+
-|  Error Bar (shown only on validation errors)                  |
-|  "Error at line 12, column 5: Unexpected token '}'"           |
-+---------------------------------------------------------------+
-```
-
 ## User Flows
 
 ### Flow 1: Paste and Format
