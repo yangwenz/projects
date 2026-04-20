@@ -32,6 +32,7 @@ The app is a single-route Next.js client-side application. All components are `"
               │  - minify     │
               │  - validate   │
               │  - stats      │
+              │  - highlight  │
               └───────────────┘
 ```
 
@@ -39,7 +40,7 @@ The app is a single-route Next.js client-side application. All components are `"
 
 | Module | Responsibility |
 |---|---|
-| **JSON Worker** | Parse, validate, format, minify, compute stats. Runs off the main thread. |
+| **JSON Worker** | Parse, validate, format, minify, syntax-highlight, compute stats. Runs off the main thread. |
 | **Toolbar** | Single row of action buttons above the panels: Upload, Paste, Clear, Copy, Download, Minify. |
 | **InputPanel** | Text editor with line numbers, error highlighting, file drop zone. |
 | **CodeView** | Syntax-highlighted formatted JSON output with line numbers. |
@@ -85,6 +86,7 @@ Desktop (1024px+): side-by-side two-panel layout. Tablet/mobile: stacked vertica
 - Left group (input actions): Upload, Paste, Clear. Right group (output actions): Copy, Download, Minify.
 - Upload opens a native file picker filtered to `.json`. Paste reads from the clipboard. Clear resets all state.
 - Copy writes the current output to the clipboard. Download saves it as a `.json` file. Minify toggles minified output.
+- Toolbar is a stateless component. `page.tsx` assembles callbacks from `useJsonWorker` (minify), `useFileHandler` (upload, download), and local handlers (paste, copy, clear), then passes them as props.
 
 ### Input Panel
 
@@ -95,14 +97,14 @@ Desktop (1024px+): side-by-side two-panel layout. Tablet/mobile: stacked vertica
 
 ### Output Panel
 
-- **Code View** (default): A read-only div with syntax-highlighted HTML spans. Each token type (key, string, number, boolean, null, punctuation) gets a distinct color via Tailwind classes. Line numbers in a gutter.
-- **Tree View**: A recursive component. Each node shows: expand/collapse toggle (for objects/arrays), the key or index label, a type badge, and the value (for leaves). Click a node row to copy its path (`$.foo.bar[0]`) and show a toast.
+- **Code View** (default): A read-only div that renders the `tokens` array from the worker's `FormatResult`. Each token type (key, string, number, boolean, null, punctuation) maps to a `<span>` with a distinct Tailwind color class. Line numbers in a gutter. CodeView does no parsing or tokenizing itself -- it just maps tokens to markup.
+- **Tree View**: A recursive component. Each node shows: expand/collapse toggle (for objects/arrays), the key or index label, a type badge, and the value (for leaves). Click a node row to copy its path (`$.foo.bar[0]`) and show a toast. The tree is built lazily -- `tree-builder.ts` runs on the main thread only when the user switches to Tree View, using the `parsed` object from the last `FormatResult`. It does not rebuild on every keystroke while Code View is active.
 
 ### Status Bar
 
 - A single row below the input and output panels, always visible.
 - **Left side**: Validation status -- a green dot + "Valid JSON" on success, or a red dot + error message with line:column on failure.
-- **Right side**: Stats -- input size (B/KB/MB), line count, key count, max depth. Separated by middot (`·`) delimiters. Updated on every successful parse. Shows dashes (`—`) when input is empty or invalid.
+- **Right side**: Stats -- input size (B/KB/MB), line count, key count, max depth. Separated by middot (`·`) delimiters. Updated on every successful parse. Shows dashes (`—`) when input is empty or invalid. When minified output is active, the size field shows a before/after comparison (e.g., `1.2 KB → 840 B`). This reverts to the normal input size display when the user edits the input.
 
 ### Settings Popover
 
@@ -115,9 +117,9 @@ Desktop (1024px+): side-by-side two-panel layout. Tablet/mobile: stacked vertica
 | User Action | System Response |
 |---|---|
 | Type in input | Debounce 300ms, then send to worker for validate + format. Update output + status bar. |
-| Paste into input | If auto-format on, same as typing but immediate (paste replaces content). |
+| Paste into input | If auto-format on, same as typing (300ms debounce, then validate + format). |
 | Drop/upload file | Read file contents into input textarea. Trigger validate + format. |
-| Click Minify | Send minify request to worker. Show minified output + size comparison in status bar. |
+| Click Minify | Send minify request to worker. Show minified output. Status bar size field shows `original → minified` comparison. |
 | Click Copy | Copy output text to clipboard. Show toast. |
 | Click Download | Trigger a download of the output as `.json`. |
 | Click Clear | Reset input, output, status bar to empty state. |
@@ -154,7 +156,7 @@ src/
 ├── hooks/
 │   ├── useJsonWorker.ts        # Manages worker lifecycle + message passing
 │   ├── useSettings.ts          # Settings state + localStorage sync
-│   └── useFileHandler.ts       # File upload, drag-drop, download logic
+│   └── useFileHandler.ts       # File I/O: returns onUpload/onDownload (→ Toolbar) and onDrop/onDragOver (→ InputPanel)
 │
 ├── lib/
 │   ├── json-engine.ts          # Pure functions: parse, format, minify, validate, stats
@@ -193,15 +195,33 @@ The main thread and worker communicate via `postMessage` with a typed message pr
 // Main thread → Worker
 type WorkerRequest =
   | { id: string; type: "format"; payload: { input: string; indent: IndentOption; sortKeys: SortKeysOption } }
-  | { id: string; type: "minify"; payload: { input: string } }
-  | { id: string; type: "validate"; payload: { input: string } };
+  | { id: string; type: "minify"; payload: { input: string } };
 
 // Worker → Main thread
 type WorkerResponse =
   | { id: string; type: "format"; result: FormatResult }
   | { id: string; type: "minify"; result: MinifyResult }
-  | { id: string; type: "validate"; result: ValidateResult }
   | { id: string; type: "error"; error: string };
+
+type ValidationResult =
+  | { valid: true }
+  | { valid: false; line: number; column: number; message: string };
+
+type HighlightToken = { text: string; type: "key" | "string" | "number" | "boolean" | "null" | "punctuation" };
+
+type FormatResult = {
+  formatted: string;
+  tokens: HighlightToken[];
+  parsed: unknown;
+  validation: ValidationResult;
+  stats: { byteSize: number; lineCount: number; keyCount: number; maxDepth: number };
+};
+
+type MinifyResult = {
+  minified: string;
+  originalSize: number;
+  minifiedSize: number;
+};
 ```
 
 Each request includes a unique `id` so the main thread can correlate responses. The `useJsonWorker` hook generates IDs and discards stale responses (if a newer request has been sent).
@@ -211,12 +231,12 @@ Each request includes a unique `id` so the main thread can correlate responses. 
 ```
 User types → 300ms debounce → useJsonWorker.format(input, settings)
   → postMessage({ id, type: "format", payload })
-  → Worker: parse → validate → sort keys → format → compute stats
-  → postMessage({ id, type: "format", result: { formatted, stats, validation } })
+  → Worker: parse → validate → sort keys → format → highlight → compute stats
+  → postMessage({ id, type: "format", result: { formatted, tokens, stats, validation, parsed } })
   → Hook updates state → React re-renders output
 ```
 
-A single `format` request returns everything: the formatted string, validation result, and stats. This avoids multiple round-trips for what is always needed together.
+A single `format` request returns everything: the formatted string, syntax-highlighted tokens, validation result, and stats. This avoids multiple round-trips for what is always needed together. Syntax highlighting runs in the worker so that tokenizing large files does not block the main thread.
 
 The `minify` request is separate because it's user-triggered (button click), not automatic.
 
@@ -240,7 +260,7 @@ The `minify` request is separate because it's user-triggered (button click), not
 - **Key count**: Increment for every object key encountered during the walk.
 - **Max depth**: Track depth during the walk, record the maximum.
 
-All operations run in a single pass where possible. A `format` request does: parse → validate → sort → stringify → stats, returning one combined result object.
+All operations run in a single pass where possible. A `format` request does: parse → validate → sort → stringify → highlight → stats, returning one combined result object.
 
 ---
 
