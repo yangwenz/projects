@@ -4,25 +4,25 @@
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                    Next.js App Shell                     │
-│                   (App Router, SSR=off)                  │
+│                    Next.js App Shell                      │
+│                   (App Router, SSR=off)                   │
 ├──────────────────────────────────────────────────────────┤
 │                                                          │
-│  ┌───────────────┐   ┌──────────────┐   ┌────────────┐   │
-│  │  EditorPanel  │   │   Toolbar    │   │ EditorPanel│   │
-│  │   (Left)      │   │  (controls)  │   │  (Right)   │   │
-│  └───────┬───────┘   └──────┬───────┘   └─────┬──────┘   │
-│          │                  │                 │          │
-│          └───────────┬──────┘─────────────────┘          │
-│                      │                                   │
-│              ┌───────▼────────┐                          │
-│              │  DiffProvider  │  (React Context)         │
-│              └───────┬────────┘                          │
-│                      │ postMessage                       │
+│  ┌───────────────┐   ┌──────────────┐   ┌────────────┐  │
+│  │  EditorPanel  │   │   Toolbar    │   │ EditorPanel │  │
+│  │   (Left)      │   │  (controls)  │   │  (Right)    │  │
+│  └───────┬───────┘   └──────┬───────┘   └─────┬──────┘  │
+│          │                   │                 │          │
+│          └───────────┬───────┘─────────────────┘          │
+│                      │                                    │
+│              ┌───────▼────────┐                           │
+│              │  DiffProvider  │  (React Context)          │
+│              └───────┬────────┘                           │
+│                      │ postMessage                        │
 ├──────────────────────┼───────────────────────────────────┤
-│              ┌───────▼────────┐                          │
-│              │   Web Worker   │  (diff computation)      │
-│              └────────────────┘                          │
+│              ┌───────▼────────┐                           │
+│              │   Web Worker   │  (diff computation)       │
+│              └────────────────┘                           │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -33,8 +33,8 @@
 | `DiffProvider` | Holds editor content, diff results, settings, and mode. Dispatches work to the Web Worker. Exposes state via context. |
 | `EditorPanel` | Textarea with line numbers, inline diff highlights, file upload drop zone. |
 | `Toolbar` | Granularity toggle, navigation buttons, swap/clear, export dropdown, settings popover. |
-| `Web Worker` | Receives text pairs + options, runs the diff algorithm, posts results back. |
-| `ScrollSync` | Coordinates scroll positions between the two panels using diff chunk mapping. |
+| `Web Worker` | Receives text pairs + options, runs the diff algorithm, posts results back. Validates input size limits. |
+| `ScrollSync` | Coordinates scroll positions between the two panels using a line-offset mapping derived from alignment anchors. |
 | `ExportService` | Generates unified diff, .txt, and .html exports from diff results. |
 
 ---
@@ -45,8 +45,10 @@
 
 ```
 ┌───────────────────────────────────────────────────────┐
-│  [Logo]   [Line|Word|Char]   [⇄ Swap] [✕ Clear]       │
-│           [◀ Prev] 3/7 [Next ▶]   [Export ▾] [⚙]      │
+│  [Logo]   [Line|Word|Char]   [⇄ Swap] [✕ Clear]      │
+│           [◀ Prev] 3/7 [Next ▶]   [Export ▾] [⚙]     │
+├───────────────────────────────────────────────────────┤
+│  ⚠ Warning banner (shown when input exceeds limits)   │
 ├──────────────────────────┬────────────────────────────┤
 │  ┌─── Original ────────┐ │ ┌─── Modified ───────────┐ │
 │  │ [Upload] filename   │ │ │ [Upload] filename      │ │
@@ -54,13 +56,15 @@
 │  │ 1 │ unchanged line  │ │ │ 1 │ unchanged line     │ │
 │  │ 2 │▓removed text▓   │ │ │ 2 │▒added text▒        │ │
 │  │ 3 │ some ▓old▓ word │ │ │ 3 │ some ▒new▒ word    │ │
-│  │   │ (padding line)  │ │ │ 4 │▒inserted line▒     │ │
-│  │ 4 │ unchanged       │ │ │ 5 │ unchanged          │ │
+│  │ 4 │ unchanged       │ │ │ 4 │▒inserted line▒     │ │
+│  │   │                 │ │ │ 5 │ unchanged          │ │
 │  └─────────────────────┘ │ └────────────────────────┘ │
 ├──────────────────────────┴────────────────────────────┤
 │  +3 additions  -1 deletion  ~2 modifications  │ 12L   │
 └───────────────────────────────────────────────────────┘
 ```
+
+The warning banner is hidden by default and only appears when the worker returns a `DiffError` (e.g., input exceeds 5 MB or 100k lines). It displays the error message with a dismiss button.
 
 ### Inline Diff Highlighting
 
@@ -74,7 +78,7 @@ The left panel only shows removals/modifications; the right panel only shows add
 ### Interactions
 
 - **Typing** → debounced diff trigger (300ms)
-- **Granularity toggle** → immediate re-render with existing diff data (Word/Char share the same diff result, just rendered differently) or re-compute if switching to/from Line mode
+- **Granularity toggle** → triggers a full re-compute via the worker (each mode calls a different diff algorithm: `diffLines`, `diffWords`, `diffChars`)
 - **Nav buttons** → scroll both panels to center the target diff chunk, apply a highlight ring
 - **Swap** → swap left/right text, re-diff
 - **Clear** → empty both, show undo toast (5s timer, stores previous content in ref)
@@ -86,33 +90,45 @@ The left panel only shows removals/modifications; the right panel only shows add
 
 ```
 text-compare/
-├── app/
-│   ├── layout.tsx              # Root layout, font loading, metadata
-│   ├── page.tsx                # Main page — renders CompareView
-│   └── globals.css             # Tailwind base + diff color tokens
-├── components/
-│   ├── CompareView.tsx         # Top-level orchestrator (client component)
-│   ├── EditorPanel.tsx         # Single editor panel (textarea + overlay)
-│   ├── DiffLine.tsx            # Single rendered line with highlight spans
-│   ├── Toolbar.tsx             # Controls bar (mode, nav, actions)
-│   ├── ExportMenu.tsx          # Export dropdown
-│   ├── SettingsPopover.tsx     # Settings panel
-│   ├── StatsBar.tsx            # Footer statistics
-│   └── UndoToast.tsx           # Clear undo notification
-├── context/
-│   └── DiffContext.tsx         # DiffProvider + useDiff hook
-├── workers/
-│   └── diff.worker.ts          # Web Worker entry point
-├── lib/
-│   ├── diff-protocol.ts        # Message types for worker communication
-│   ├── scroll-sync.ts          # Scroll synchronization logic
-│   ├── export.ts               # Export format generators
-│   ├── file-upload.ts          # File validation and reading
-│   └── settings.ts             # localStorage persistence helpers
-├── types/
-│   └── diff.ts                 # Shared type definitions
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx              # Root layout, font loading, metadata
+│   │   ├── page.tsx                # Main page — renders CompareView
+│   │   └── globals.css             # Tailwind base + diff color tokens
+│   ├── components/
+│   │   ├── CompareView.tsx         # Top-level orchestrator (client component)
+│   │   ├── EditorPanel.tsx         # Single editor panel (textarea + overlay)
+│   │   ├── DiffLine.tsx            # Single rendered line with highlight spans
+│   │   ├── Toolbar.tsx             # Controls bar (mode, nav, actions)
+│   │   ├── ExportMenu.tsx          # Export dropdown
+│   │   ├── SettingsPopover.tsx     # Settings panel
+│   │   ├── StatsBar.tsx            # Footer statistics
+│   │   ├── WarningBanner.tsx       # Inline error/warning display
+│   │   └── UndoToast.tsx           # Clear undo notification
+│   ├── context/
+│   │   └── DiffContext.tsx         # DiffProvider + useDiff hook
+│   ├── workers/
+│   │   └── diff.worker.ts          # Web Worker entry point
+│   ├── lib/
+│   │   ├── diff-protocol.ts        # Message types for worker communication
+│   │   ├── scroll-sync.ts          # Scroll synchronization logic
+│   │   ├── export.ts               # Export format generators
+│   │   ├── file-upload.ts          # File validation and reading
+│   │   └── settings.ts             # localStorage persistence helpers
+│   └── types/
+│       └── diff.ts                 # Shared type definitions
+├── __tests__/
+│   ├── lib/
+│   │   ├── diff-computation.test.ts
+│   │   ├── scroll-sync.test.ts
+│   │   ├── export.test.ts
+│   │   ├── file-upload.test.ts
+│   │   └── settings.test.ts
+│   └── workers/
+│       └── diff.worker.test.ts
 ├── public/
 │   └── ...
+├── jest.config.ts
 ├── next.config.ts
 ├── tsconfig.json
 ├── tailwind.config.ts
@@ -130,7 +146,7 @@ The `diff` library's algorithm is O(n*d) where d is the edit distance. For large
 ### Message Protocol
 
 ```typescript
-// diff-protocol.ts
+// src/lib/diff-protocol.ts
 
 type DiffMode = "line" | "word" | "character";
 
@@ -178,6 +194,27 @@ type WorkerIncoming = DiffRequest;
 type WorkerOutgoing = DiffResponse | DiffError;
 ```
 
+### Input Validation & Error Handling
+
+Before computing the diff, the worker validates the input:
+
+1. **Size check**: If `leftText.length + rightText.length > 5 * 1024 * 1024` (5 MB combined), post a `DiffError` with message "Input exceeds 5 MB limit".
+2. **Line count check**: If either text exceeds 100,000 lines, post a `DiffError` with message "Input exceeds 100,000 line limit".
+
+On the main thread, `DiffProvider` handles `DiffError` responses by setting an `error` state. The `WarningBanner` component renders above the editor panels when this state is non-null, showing the error message with a dismiss action.
+
+### Mode-Specific Algorithm Calls
+
+Each mode invokes a different function from the `diff` library:
+
+| Mode | Function | Granularity |
+|------|----------|-------------|
+| Line | `diffLines()` | Full lines |
+| Word | `diffWords()` | Whitespace-delimited tokens |
+| Character | `diffChars()` | Individual characters |
+
+Switching between any two modes always triggers a new `DiffRequest` to the worker since the underlying algorithm and output differ.
+
 ### Debouncing & Stale Rejection
 
 Debouncing lives in `DiffProvider`, not the worker:
@@ -204,58 +241,183 @@ If a new request arrives while the worker is busy, the worker finishes the curre
 
 When one side has insertions the other doesn't, line numbers diverge. Naive pixel-based scroll sync causes misalignment — matching content drifts apart.
 
-### Solution: Chunk-Based Alignment with Padding Lines
+### Solution: Line-Offset Mapping from Alignment Anchors
 
-**Step 1 — Build an alignment map from diff chunks:**
+**Step 1 — Build alignment anchors from diff chunks:**
 
-Each `DiffChunk` defines a correspondence between line ranges. From the chunks we derive an ordered list of "alignment anchors":
+Each `DiffChunk` defines a correspondence between line ranges on both sides. From the chunks we derive an ordered list of alignment anchors:
 
 ```typescript
 interface AlignmentAnchor {
-  leftLine: number;
-  rightLine: number;
-  type: "equal" | "change";
+  leftLine: number;   // line index in left panel
+  rightLine: number;  // corresponding line index in right panel
 }
 ```
 
-Equal regions have a 1:1 line mapping. Change regions may differ in height (e.g., 3 lines on the left, 5 on the right).
+Equal regions produce 1:1 anchors (one per line). Change regions produce a single anchor at their start, mapping the first line of the left range to the first line of the right range.
 
-**Step 2 — Insert virtual padding lines:**
+**Step 2 — Compute a line-offset mapping:**
 
-For each change chunk, the shorter side gets padding lines (empty, non-editable, visually distinct with a subtle background) to match the taller side's height. This guarantees that after padding, both panels have the same total rendered height and every equal region starts at the same vertical offset.
+From the anchors, build a function that maps any line number on one side to the corresponding scroll offset on the other:
 
+```typescript
+function mapScrollPosition(
+  sourceScrollTop: number,
+  sourceSide: "left" | "right",
+  anchors: AlignmentAnchor[],
+  lineHeight: number
+): number {
+  // Find which anchor region the current scroll position falls in
+  const sourceLine = Math.floor(sourceScrollTop / lineHeight);
+
+  // Binary search anchors to find the enclosing region
+  const { leftLine, rightLine } = findEnclosingAnchor(anchors, sourceSide, sourceLine);
+
+  // Compute offset: the target scroll position accounts for
+  // the line number difference between sides at this anchor
+  const lineDelta = sourceSide === "left"
+    ? rightLine - leftLine
+    : leftLine - rightLine;
+
+  return sourceScrollTop + (lineDelta * lineHeight);
+}
 ```
-Left (original)          Right (modified)
-─────────────────        ─────────────────
-line 1 (equal)           line 1 (equal)
-line 2 (removed)         ░░░ padding ░░░
-line 3 (removed)         ░░░ padding ░░░
-░░░ padding ░░░          line 2 (added)
-░░░ padding ░░░          line 3 (added)
-░░░ padding ░░░          line 4 (added)
-line 4 (equal)           line 5 (equal)
-```
 
-**Step 3 — Synchronized scrolling:**
+This approach handles insertions/deletions naturally: if the left side has 3 deleted lines that don't appear on the right, the mapping skips those lines when computing the target scroll position.
 
-With padding in place, both panels have identical total height. Scroll sync becomes trivial:
+**Step 3 — Apply on scroll events:**
 
 ```typescript
 function handleScroll(source: "left" | "right", scrollTop: number) {
   if (!syncEnabled) return;
+  const targetScrollTop = mapScrollPosition(scrollTop, source, anchors, lineHeight);
   const target = source === "left" ? rightPanel : leftPanel;
-  target.scrollTop = scrollTop;
+  target.scrollTop = targetScrollTop;
 }
 ```
 
-We attach `onscroll` listeners to both panels. A guard flag prevents infinite loops (panel A scrolls → sets panel B → B's scroll event fires → would set A → guard blocks it).
+A guard flag prevents infinite scroll loops (panel A scrolls → sets panel B → B's event fires → guard blocks re-setting A).
 
 **Step 4 — Toggle:**
 
-Users can disable sync via a toggle button. When disabled, panels scroll independently. Re-enabling snaps the inactive panel to match the active panel's position.
+Users can disable sync via a toggle button. When disabled, panels scroll independently. Re-enabling snaps the inactive panel to match the active panel's mapped position.
 
 ### Performance Considerations
 
-- Padding lines are virtual (rendered via a CSS `height` spacer or minimal DOM element), not real textarea rows.
-- The alignment map is recomputed only when diff results change, not on every scroll event.
+- The alignment anchor list is recomputed only when diff results change, not on every scroll event.
+- `findEnclosingAnchor` uses binary search — O(log n) per scroll event.
 - Scroll handlers use `requestAnimationFrame` to coalesce rapid events.
+- Line height is measured once on mount and cached (assumes monospace font with uniform line height).
+
+---
+
+## Testing
+
+### Framework
+
+**Jest** with `ts-jest` for TypeScript transformation. Tests live in `__tests__/` at the project root, mirroring the `src/` structure they cover.
+
+### Configuration
+
+```typescript
+// jest.config.ts
+import type { Config } from "jest";
+
+const config: Config = {
+  preset: "ts-jest",
+  testEnvironment: "node",
+  roots: ["<rootDir>/__tests__"],
+  moduleNameMapper: {
+    "^@/(.*)$": "<rootDir>/src/$1",
+  },
+};
+
+export default config;
+```
+
+### Test Coverage
+
+#### `__tests__/lib/diff-computation.test.ts`
+
+Tests the core diff logic extracted from the worker (the pure computation function, not the message layer):
+
+| Case | Description |
+|------|-------------|
+| Identical inputs | Returns zero chunks, stats all zero |
+| Single line added | One chunk with `rightLineCount=1`, `leftLineCount=0` |
+| Single line removed | One chunk with `leftLineCount=1`, `rightLineCount=0` |
+| Word-level diff | Segments within a chunk reflect word boundaries |
+| Character-level diff | Segments reflect individual character changes |
+| `ignoreCase` option | "Hello" vs "hello" treated as equal |
+| `ignoreWhitespace` option | Leading/trailing spaces ignored |
+| `ignoreEmptyLines` option | Blank lines skipped in comparison |
+| Input exceeding 5 MB | Returns a `DiffError` with size limit message |
+| Input exceeding 100k lines | Returns a `DiffError` with line limit message |
+
+#### `__tests__/lib/export.test.ts`
+
+Tests export format generators:
+
+| Case | Description |
+|------|-------------|
+| Unified diff format | Output matches standard unified diff with `---`/`+++` headers and `@@` hunks |
+| Plain text with markers | Added lines prefixed `+`, removed prefixed `-` |
+| HTML export | Contains styled `<span>` elements with correct class names |
+| Empty diff (identical) | Produces minimal output indicating no differences |
+| Multi-chunk diff | Hunks are ordered and separated correctly |
+
+#### `__tests__/lib/scroll-sync.test.ts`
+
+Tests `mapScrollPosition` and `findEnclosingAnchor`:
+
+| Case | Description |
+|------|-------------|
+| No diff (1:1 mapping) | Returns same scrollTop for both sides |
+| Insertion on right | Left scroll maps to offset position on right accounting for inserted lines |
+| Deletion on left | Right scroll maps backward to correct left position |
+| Multiple anchors | Binary search finds correct enclosing region |
+| Scroll at exact anchor boundary | No off-by-one; maps to precise target line |
+| Empty anchor list | Returns input scrollTop unchanged |
+
+#### `__tests__/lib/file-upload.test.ts`
+
+Tests file validation logic:
+
+| Case | Description |
+|------|-------------|
+| Valid `.txt` file under 5 MB | Accepted |
+| Valid `.json`, `.md`, `.ts`, etc. | All supported extensions accepted |
+| Unsupported extension (`.exe`) | Rejected with error message |
+| File exceeding 5 MB | Rejected with size error |
+| File with no extension | Rejected |
+| Empty file | Accepted (valid edge case) |
+
+#### `__tests__/lib/settings.test.ts`
+
+Tests localStorage persistence helpers (uses a mock `localStorage`):
+
+| Case | Description |
+|------|-------------|
+| Save and load settings | Round-trips all setting fields correctly |
+| Missing localStorage key | Returns default settings |
+| Corrupted JSON in storage | Returns default settings, does not throw |
+| Partial settings object | Merges with defaults for missing fields |
+| Each setting toggle | Individual fields persist independently |
+
+#### `__tests__/workers/diff.worker.test.ts`
+
+Tests the worker's message handling layer (worker instantiated directly, not via `postMessage` in a browser):
+
+| Case | Description |
+|------|-------------|
+| Valid request → response | Posts back `DiffResponse` with matching `id` |
+| Oversized input | Posts back `DiffError` without attempting computation |
+| Mode switching | Different modes produce structurally different segment outputs |
+
+### Running Tests
+
+```bash
+npm test              # run all tests
+npm test -- --watch   # watch mode during development
+npm test -- --coverage # generate coverage report
+```
