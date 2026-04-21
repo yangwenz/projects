@@ -30,12 +30,12 @@
 
 | Module | Responsibility |
 |--------|---------------|
-| `DiffProvider` | Holds editor content, diff results, settings, and mode. Dispatches work to the Web Worker. Exposes state via context. |
+| `DiffProvider` | Holds editor content, diff results, settings, mode, and navigation state (current change index, total change count). Dispatches work to the Web Worker. Exposes state and navigation actions (`goToNext`, `goToPrev`) via context. |
 | `EditorPanel` | Textarea with line numbers, inline diff highlights, file upload drop zone. |
 | `Toolbar` | Granularity toggle, navigation buttons, swap/clear, export dropdown, settings popover. |
 | `Web Worker` | Receives text pairs + options, runs the diff algorithm, posts results back. Validates input size limits. |
 | `ScrollSync` | Coordinates scroll positions between the two panels using a line-offset mapping derived from alignment anchors. |
-| `ExportService` | Generates unified diff, .txt, and .html exports from diff results. |
+| `export` | Generates unified diff, .txt, and .html exports from diff results (pure functions in `src/lib/export.ts`). |
 
 ---
 
@@ -70,10 +70,10 @@ The warning banner is hidden by default and only appears when the worker returns
 
 Each `EditorPanel` renders its content as a list of line elements. Highlighting is applied via `<span>` elements with background classes:
 
-- **Line mode**: Entire line gets `bg-diff-added` or `bg-diff-removed`.
-- **Word/Char mode**: The line is split into segments. Each segment is wrapped in a span: unchanged (no class), added (`bg-diff-added`), removed (`bg-diff-removed`), or modified (`bg-diff-modified`).
+- **Line mode**: Entire line gets `bg-diff-added` or `bg-diff-removed`. Each chunk segment has type `"added"`, `"removed"`, or `"equal"` — one segment per line.
+- **Word/Char mode**: The line is split into fine-grained segments. Each segment is wrapped in a span: unchanged (`"equal"`, no class), added (`"added"`, `bg-diff-added`), removed (`"removed"`, `bg-diff-removed`), or modified (`"modified"`, `bg-diff-modified` — yellow background for content that changed between sides).
 
-The left panel only shows removals/modifications; the right panel only shows additions/modifications. This keeps each side clean.
+The left panel renders `"removed"` and `"modified"` highlights; the right panel renders `"added"` and `"modified"` highlights. `"equal"` segments render unstyled on both sides.
 
 ### Interactions
 
@@ -110,9 +110,10 @@ text-compare/
 │   ├── workers/
 │   │   └── diff.worker.ts          # Web Worker entry point
 │   ├── lib/
+│   │   ├── diff-computation.ts     # Pure diff logic (called by worker, independently testable)
 │   │   ├── diff-protocol.ts        # Message types for worker communication
-│   │   ├── scroll-sync.ts          # Scroll synchronization logic
-│   │   ├── export.ts               # Export format generators
+│   │   ├── scroll-sync.ts          # Scroll synchronization logic (exports mapScrollPosition, findEnclosingAnchor)
+│   │   ├── export.ts               # Export format generators (functions, not a class)
 │   │   ├── file-upload.ts          # File validation and reading
 │   │   └── settings.ts             # localStorage persistence helpers
 │   └── types/
@@ -130,7 +131,7 @@ text-compare/
 │   └── ...
 ├── jest.config.ts
 ├── next.config.ts
-├── tsconfig.json
+├── tsconfig.json              # paths: { "@/*": ["./src/*"] }
 ├── tailwind.config.ts
 └── package.json
 ```
@@ -164,7 +165,7 @@ interface DiffRequest {
 
 interface DiffSegment {
   value: string;
-  type: "equal" | "added" | "removed";
+  type: "equal" | "added" | "removed" | "modified";
 }
 
 interface DiffChunk {
@@ -172,7 +173,11 @@ interface DiffChunk {
   leftLineCount: number;
   rightLineStart: number;
   rightLineCount: number;
-  segments: DiffSegment[];  // word/char-level breakdown within the chunk
+  // In Line mode: one segment per line (type is "added", "removed", or "equal")
+  // In Word/Char mode: fine-grained segments within the chunk.
+  //   "modified" marks content that changed between sides (adjacent remove+add
+  //   pairs are merged into a single "modified" segment for each side).
+  segments: DiffSegment[];
 }
 
 interface DiffResponse {
@@ -198,7 +203,7 @@ type WorkerOutgoing = DiffResponse | DiffError;
 
 Before computing the diff, the worker validates the input:
 
-1. **Size check**: If `leftText.length + rightText.length > 5 * 1024 * 1024` (5 MB combined), post a `DiffError` with message "Input exceeds 5 MB limit".
+1. **Size check**: If either `leftText.length` or `rightText.length` exceeds `5 * 1024 * 1024` (5 MB per side), post a `DiffError` with message "Input exceeds 5 MB limit". This matches the per-file upload limit enforced by `file-upload.ts`, ensuring consistency whether text is typed or uploaded.
 2. **Line count check**: If either text exceeds 100,000 lines, post a `DiffError` with message "Input exceeds 100,000 line limit".
 
 On the main thread, `DiffProvider` handles `DiffError` responses by setting an `error` state. The `WarningBanner` component renders above the editor panels when this state is non-null, showing the error message with a dismiss action.
@@ -232,6 +237,7 @@ If a new request arrives while the worker is busy, the worker finishes the curre
 - Created once on mount via `new Worker(new URL('../workers/diff.worker.ts', import.meta.url))`.
 - Terminated on unmount (cleanup in useEffect).
 - No shared memory — communication is pure message passing (structured clone).
+- The worker's `onmessage` handler validates input, then delegates to `computeDiff()` from `src/lib/diff-computation.ts`. This keeps the pure diff logic independently importable and testable without a worker environment.
 
 ---
 
@@ -256,34 +262,42 @@ interface AlignmentAnchor {
 
 Equal regions produce 1:1 anchors (one per line). Change regions produce a single anchor at their start, mapping the first line of the left range to the first line of the right range.
 
-**Step 2 — Compute a line-offset mapping:**
+**Step 2 — Build a cumulative offset table:**
 
-From the anchors, build a function that maps any line number on one side to the corresponding scroll offset on the other:
+Since line wrapping is enabled by default, lines may have variable rendered heights. Each panel maintains a `lineOffsets: number[]` array where `lineOffsets[i]` is the pixel offset of line `i` from the top of the panel (measured from DOM elements via `offsetTop`). This table is recomputed when content or container width changes (debounced via ResizeObserver).
+
+From the anchors and offset tables, build a mapping function:
 
 ```typescript
 function mapScrollPosition(
   sourceScrollTop: number,
   sourceSide: "left" | "right",
   anchors: AlignmentAnchor[],
-  lineHeight: number
+  leftOffsets: number[],
+  rightOffsets: number[]
 ): number {
-  // Find which anchor region the current scroll position falls in
-  const sourceLine = Math.floor(sourceScrollTop / lineHeight);
+  const sourceOffsets = sourceSide === "left" ? leftOffsets : rightOffsets;
+  const targetOffsets = sourceSide === "left" ? rightOffsets : leftOffsets;
 
-  // Binary search anchors to find the enclosing region
-  const { leftLine, rightLine } = findEnclosingAnchor(anchors, sourceSide, sourceLine);
+  // Binary search to find the source line at this scroll position
+  const sourceLine = findLineAtOffset(sourceOffsets, sourceScrollTop);
 
-  // Compute offset: the target scroll position accounts for
-  // the line number difference between sides at this anchor
-  const lineDelta = sourceSide === "left"
-    ? rightLine - leftLine
-    : leftLine - rightLine;
+  // Find the enclosing anchor to determine the corresponding target line
+  const anchor = findEnclosingAnchor(anchors, sourceSide, sourceLine);
+  const targetLine = sourceSide === "left"
+    ? anchor.rightLine + (sourceLine - anchor.leftLine)
+    : anchor.leftLine + (sourceLine - anchor.rightLine);
 
-  return sourceScrollTop + (lineDelta * lineHeight);
+  // Map sub-line pixel offset (for partial scroll within a wrapped line)
+  const sourceLineTop = sourceOffsets[sourceLine] ?? 0;
+  const pixelWithinLine = sourceScrollTop - sourceLineTop;
+  const targetLineTop = targetOffsets[targetLine] ?? 0;
+
+  return targetLineTop + pixelWithinLine;
 }
 ```
 
-This approach handles insertions/deletions naturally: if the left side has 3 deleted lines that don't appear on the right, the mapping skips those lines when computing the target scroll position.
+This handles line wrapping naturally: even if one side wraps a line to 3 visual rows while the other doesn't, the offset tables reflect the actual rendered height.
 
 **Step 3 — Apply on scroll events:**
 
@@ -298,6 +312,8 @@ function handleScroll(source: "left" | "right", scrollTop: number) {
 
 A guard flag prevents infinite scroll loops (panel A scrolls → sets panel B → B's event fires → guard blocks re-setting A).
 
+All pure functions (`mapScrollPosition`, `findEnclosingAnchor`, `findLineAtOffset`) are exported from `src/lib/scroll-sync.ts` for direct unit testing.
+
 **Step 4 — Toggle:**
 
 Users can disable sync via a toggle button. When disabled, panels scroll independently. Re-enabling snaps the inactive panel to match the active panel's mapped position.
@@ -305,9 +321,9 @@ Users can disable sync via a toggle button. When disabled, panels scroll indepen
 ### Performance Considerations
 
 - The alignment anchor list is recomputed only when diff results change, not on every scroll event.
-- `findEnclosingAnchor` uses binary search — O(log n) per scroll event.
+- `lineOffsets` tables are rebuilt on content change and container resize (debounced 100ms via ResizeObserver). Not rebuilt on every scroll.
+- `findEnclosingAnchor` and `findLineAtOffset` use binary search — O(log n) per scroll event.
 - Scroll handlers use `requestAnimationFrame` to coalesce rapid events.
-- Line height is measured once on mount and cached (assumes monospace font with uniform line height).
 
 ---
 
@@ -339,7 +355,7 @@ export default config;
 
 #### `__tests__/lib/diff-computation.test.ts`
 
-Tests the core diff logic extracted from the worker (the pure computation function, not the message layer):
+Tests the pure `computeDiff()` function exported from `src/lib/diff-computation.ts`:
 
 | Case | Description |
 |------|-------------|
@@ -368,7 +384,7 @@ Tests export format generators:
 
 #### `__tests__/lib/scroll-sync.test.ts`
 
-Tests `mapScrollPosition` and `findEnclosingAnchor`:
+Tests `mapScrollPosition`, `findEnclosingAnchor`, and `findLineAtOffset`:
 
 | Case | Description |
 |------|-------------|
@@ -378,6 +394,8 @@ Tests `mapScrollPosition` and `findEnclosingAnchor`:
 | Multiple anchors | Binary search finds correct enclosing region |
 | Scroll at exact anchor boundary | No off-by-one; maps to precise target line |
 | Empty anchor list | Returns input scrollTop unchanged |
+| Variable line heights (wrapping) | Correctly maps when offset tables have non-uniform spacing |
+| `findLineAtOffset` edge cases | Returns 0 for scrollTop=0, last line for scrollTop beyond content |
 
 #### `__tests__/lib/file-upload.test.ts`
 
