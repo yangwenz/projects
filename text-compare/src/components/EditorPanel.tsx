@@ -136,6 +136,7 @@ export default function EditorPanel({
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) handleFileUpload(file);
+            e.target.value = "";
           }}
         />
       </div>
