@@ -214,14 +214,10 @@ function buildRenderedLines(
 
     if (count === 0) continue;
 
-    const hasModified = chunk.segments.some((s) => s.type === "modified");
-    const isSimple =
-      !hasModified &&
-      chunk.segments.every(
-        (s) => s.type === "added" || s.type === "removed" || s.type === "equal"
-      );
+    const isPureAdd = chunk.leftLineCount === 0;
+    const isPureRemove = chunk.rightLineCount === 0;
 
-    if (isSimple) {
+    if (isPureAdd || isPureRemove) {
       for (let i = 0; i < count && start + i < result.length; i++) {
         const type =
           side === "left" ? ("removed" as const) : ("added" as const);
@@ -229,21 +225,14 @@ function buildRenderedLines(
       }
     } else {
       const segmentLines = splitSegmentsByNewline(chunk.segments);
-      const relevantLines =
-        side === "left"
-          ? segmentLines.slice(0, chunk.leftLineCount)
-          : segmentLines.slice(
-              chunk.leftLineCount,
-              chunk.leftLineCount + chunk.rightLineCount
-            );
 
       for (let i = 0; i < count && start + i < result.length; i++) {
-        if (i < relevantLines.length) {
-          const filtered = relevantLines[i].filter((seg) => {
+        if (i < segmentLines.length) {
+          const filtered = segmentLines[i].filter((seg) => {
             if (side === "left") {
-              return seg.type === "equal" || seg.type === "removed" || seg.type === "modified";
+              return seg.type === "equal" || seg.type === "removed";
             }
-            return seg.type === "equal" || seg.type === "added" || seg.type === "modified";
+            return seg.type === "equal" || seg.type === "added";
           });
           result[start + i] = filtered.length > 0 ? filtered : [{ value: lines[start + i] ?? "", type: "equal" }];
         }

@@ -8,7 +8,7 @@ export interface DiffOptions {
 
 export interface DiffSegment {
   value: string;
-  type: "equal" | "added" | "removed" | "modified";
+  type: "equal" | "added" | "removed";
 }
 
 export interface DiffChunk {
@@ -30,7 +30,6 @@ export interface DiffRequest {
 export interface DiffStats {
   additions: number;
   deletions: number;
-  modifications: number;
 }
 
 export interface DiffResponse {

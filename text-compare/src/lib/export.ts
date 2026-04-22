@@ -110,7 +110,7 @@ export function generateHtmlDiff(
   htmlLines.push("<!DOCTYPE html>");
   htmlLines.push("<html><head><style>");
   htmlLines.push(
-    ".added { background-color: #d4edda; } .removed { background-color: #f8d7da; } .modified { background-color: #fff3cd; } pre { font-family: monospace; line-height: 1.5; }"
+    ".added { background-color: #d4edda; } .removed { background-color: #f8d7da; } pre { font-family: monospace; line-height: 1.5; }"
   );
   htmlLines.push("</style></head><body><pre>");
 

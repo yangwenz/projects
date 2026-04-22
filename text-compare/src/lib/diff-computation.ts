@@ -72,7 +72,7 @@ function computeLineDiff(
 ): DiffResponse {
   const changes = Diff.diffLines(left, right);
   const chunks: DiffChunk[] = [];
-  const stats: DiffStats = { additions: 0, deletions: 0, modifications: 0 };
+  const stats: DiffStats = { additions: 0, deletions: 0 };
   let leftLine = 0;
   let rightLine = 0;
 
@@ -127,7 +127,7 @@ function computeWordDiff(
   const lineChanges = Diff.diffLines(left, right);
 
   const chunks: DiffChunk[] = [];
-  const stats: DiffStats = { additions: 0, deletions: 0, modifications: 0 };
+  const stats: DiffStats = { additions: 0, deletions: 0 };
   let leftLine = 0;
   let rightLine = 0;
 
@@ -163,12 +163,13 @@ function computeWordDiff(
             if (!wd.added && !wd.removed) {
               segments.push({ value: wd.value, type: "equal" });
             } else if (wd.removed) {
-              segments.push({ value: wd.value, type: "modified" });
+              segments.push({ value: wd.value, type: "removed" });
             } else if (wd.added) {
-              segments.push({ value: wd.value, type: "modified" });
+              segments.push({ value: wd.value, type: "added" });
             }
           }
-          stats.modifications++;
+          stats.deletions++;
+          stats.additions++;
         } else if (j >= removedCount) {
           segments.push({ value: rightContent, type: "added" });
           stats.additions++;
@@ -237,7 +238,7 @@ function computeCharDiff(
   const lineChanges = Diff.diffLines(left, right);
 
   const chunks: DiffChunk[] = [];
-  const stats: DiffStats = { additions: 0, deletions: 0, modifications: 0 };
+  const stats: DiffStats = { additions: 0, deletions: 0 };
   let leftLine = 0;
   let rightLine = 0;
 
@@ -273,12 +274,13 @@ function computeCharDiff(
             if (!cd.added && !cd.removed) {
               segments.push({ value: cd.value, type: "equal" });
             } else if (cd.removed) {
-              segments.push({ value: cd.value, type: "modified" });
+              segments.push({ value: cd.value, type: "removed" });
             } else if (cd.added) {
-              segments.push({ value: cd.value, type: "modified" });
+              segments.push({ value: cd.value, type: "added" });
             }
           }
-          stats.modifications++;
+          stats.deletions++;
+          stats.additions++;
         } else if (j >= removedCount) {
           segments.push({ value: rightContent, type: "added" });
           stats.additions++;

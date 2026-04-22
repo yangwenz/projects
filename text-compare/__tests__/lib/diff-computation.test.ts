@@ -13,7 +13,6 @@ describe("computeDiff", () => {
       expect(result.stats).toEqual({
         additions: 0,
         deletions: 0,
-        modifications: 0,
       });
     }
   });
@@ -56,10 +55,10 @@ describe("computeDiff", () => {
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
       expect(result.chunks.length).toBeGreaterThan(0);
-      const hasModified = result.chunks.some((c) =>
-        c.segments.some((s) => s.type === "modified")
+      const hasAddedOrRemoved = result.chunks.some((c) =>
+        c.segments.some((s) => s.type === "added" || s.type === "removed")
       );
-      expect(hasModified).toBe(true);
+      expect(hasAddedOrRemoved).toBe(true);
     }
   });
 
@@ -72,10 +71,10 @@ describe("computeDiff", () => {
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
       expect(result.chunks.length).toBeGreaterThan(0);
-      const hasModified = result.chunks.some((c) =>
-        c.segments.some((s) => s.type === "modified")
+      const hasAddedOrRemoved = result.chunks.some((c) =>
+        c.segments.some((s) => s.type === "added" || s.type === "removed")
       );
-      expect(hasModified).toBe(true);
+      expect(hasAddedOrRemoved).toBe(true);
     }
   });
 

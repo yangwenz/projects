@@ -57,7 +57,6 @@ export function DiffProvider({ children }: { children: ReactNode }) {
   const [stats, setStats] = useState<DiffStats>({
     additions: 0,
     deletions: 0,
-    modifications: 0,
   });
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
@@ -82,7 +81,7 @@ export function DiffProvider({ children }: { children: ReactNode }) {
       if ("error" in data) {
         setError(data.error);
         setChunks([]);
-        setStats({ additions: 0, deletions: 0, modifications: 0 });
+        setStats({ additions: 0, deletions: 0 });
       } else {
         setError(null);
         setChunks(data.chunks);

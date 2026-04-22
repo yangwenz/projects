@@ -3,7 +3,7 @@
 import { useDiff } from "@/context/DiffContext";
 
 export default function StatsBar() {
-  const { stats, totalChanges, leftText, rightText, isComputing, mode } =
+  const { stats, totalChanges, leftText, rightText, isComputing } =
     useDiff();
 
   const leftLines = leftText ? leftText.split("\n").length : 0;
@@ -24,11 +24,6 @@ export default function StatsBar() {
     <div className="flex items-center gap-4 px-4 py-2 bg-gray-50 border-t border-gray-200 text-sm text-gray-600">
       <span className="text-green-700">+{stats.additions} additions</span>
       <span className="text-red-700">-{stats.deletions} deletions</span>
-      {mode !== "line" && (
-        <span className="text-yellow-700">
-          ~{stats.modifications} modifications
-        </span>
-      )}
       <span className="ml-auto text-gray-500">
         {leftLines}L / {rightLines}L
       </span>

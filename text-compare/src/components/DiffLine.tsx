@@ -44,15 +44,12 @@ export default function DiffLine({
 }
 
 function getLineBg(segments: DiffSegment[], side: "left" | "right"): string {
-  if (segments.length === 1) {
+  const allSameType = segments.length >= 1 && segments.every((s) => s.type === segments[0].type);
+  if (allSameType) {
     const type = segments[0].type;
     if (type === "added" && side === "right") return "bg-green-50";
     if (type === "removed" && side === "left") return "bg-red-50";
   }
-  const hasChange = segments.some(
-    (s) => s.type === "added" || s.type === "removed" || s.type === "modified"
-  );
-  if (hasChange) return side === "left" ? "bg-red-50/50" : "bg-green-50/50";
   return "";
 }
 
@@ -64,8 +61,6 @@ function getSegmentClass(seg: DiffSegment, side: "left" | "right"): string {
       return side === "right" ? "bg-green-200" : "";
     case "removed":
       return side === "left" ? "bg-red-200" : "";
-    case "modified":
-      return "bg-yellow-200";
     default:
       return "";
   }

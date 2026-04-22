@@ -61,8 +61,9 @@ describe("diff worker message handling", () => {
         c.segments.map((s) => s.type)
       );
 
-      expect(lineSegTypes).not.toContain("modified");
-      expect(wordSegTypes).toContain("modified");
+      const wordHasInlineChanges = wordSegTypes.includes("added") || wordSegTypes.includes("removed");
+      expect(lineSegTypes.every((t) => t === "added" || t === "removed")).toBe(true);
+      expect(wordHasInlineChanges).toBe(true);
     }
   });
 });
