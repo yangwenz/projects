@@ -59,40 +59,40 @@ export default function ExportMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md text-foreground/50 hover:bg-border-subtle hover:text-foreground/70 active:bg-border-default transition-colors"
       >
-        <Download size={14} />
+        <Download size={13} />
         Export
-        <ChevronDown size={12} />
+        <ChevronDown size={11} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+        <div className="absolute right-0 top-full mt-1.5 w-52 bg-surface border border-border-default rounded-xl shadow-lg z-50 py-1 overflow-hidden">
           <button
             onClick={handleCopyClipboard}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground/80 hover:bg-border-subtle active:bg-border-default transition-colors"
           >
-            <ClipboardCopy size={14} className="text-gray-400" />
+            <ClipboardCopy size={14} className="text-foreground/35" />
             Copy to clipboard
           </button>
           <button
             onClick={handleDownloadDiff}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground/80 hover:bg-border-subtle active:bg-border-default transition-colors"
           >
-            <FileCode size={14} className="text-gray-400" />
+            <FileCode size={14} className="text-foreground/35" />
             Download as .diff
           </button>
           <button
             onClick={handleDownloadTxt}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground/80 hover:bg-border-subtle active:bg-border-default transition-colors"
           >
-            <FileText size={14} className="text-gray-400" />
+            <FileText size={14} className="text-foreground/35" />
             Download as .txt
           </button>
           <button
             onClick={handleDownloadHtml}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground/80 hover:bg-border-subtle active:bg-border-default transition-colors"
           >
-            <Globe size={14} className="text-gray-400" />
+            <Globe size={14} className="text-foreground/35" />
             Download as .html
           </button>
         </div>

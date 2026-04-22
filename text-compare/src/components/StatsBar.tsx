@@ -1,6 +1,7 @@
 "use client";
 
 import { useDiff } from "@/context/DiffContext";
+import { Plus, Minus } from "lucide-react";
 
 export default function StatsBar() {
   const { stats, totalChanges, leftText, rightText, isComputing } =
@@ -11,7 +12,7 @@ export default function StatsBar() {
 
   let statusMessage: string;
   if (isComputing) {
-    statusMessage = "Comparing…";
+    statusMessage = "Comparing...";
   } else if (!leftText && !rightText) {
     statusMessage = "Enter text to compare";
   } else if (totalChanges === 0) {
@@ -21,13 +22,19 @@ export default function StatsBar() {
   }
 
   return (
-    <div className="flex items-center gap-4 px-4 py-2 bg-gray-50 border-t border-gray-200 text-sm text-gray-600">
-      <span className="text-green-700">+{stats.additions} additions</span>
-      <span className="text-red-700">-{stats.deletions} deletions</span>
-      <span className="ml-auto text-gray-500">
+    <div className="flex items-center gap-4 px-4 py-2 bg-surface border-t border-border-default text-xs">
+      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+        <Plus size={12} />
+        {stats.additions}
+      </span>
+      <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-medium">
+        <Minus size={12} />
+        {stats.deletions}
+      </span>
+      <span className="ml-auto text-foreground/40 tabular-nums">
         {leftLines}L / {rightLines}L
       </span>
-      <span className="text-gray-500">{statusMessage}</span>
+      <span className="text-foreground/50">{statusMessage}</span>
     </div>
   );
 }

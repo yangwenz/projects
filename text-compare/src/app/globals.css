@@ -1,24 +1,85 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --border: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --ring: #6366f1;
+  --accent: #4f46e5;
+  --accent-light: #eef2ff;
+  --gutter-bg: #f8fafc;
+  --gutter-text: #94a3b8;
+  --gutter-border: #e2e8f0;
+  --diff-added-bg: rgba(16, 185, 129, 0.08);
+  --diff-added-segment: rgba(16, 185, 129, 0.22);
+  --diff-removed-bg: rgba(244, 63, 94, 0.08);
+  --diff-removed-segment: rgba(244, 63, 94, 0.22);
+  --diff-current-ring: #818cf8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #e2e8f0;
+    --surface: #1e293b;
+    --surface-raised: #334155;
+    --border: #334155;
+    --border-subtle: #1e293b;
+    --ring: #818cf8;
+    --accent: #818cf8;
+    --accent-light: rgba(99, 102, 241, 0.15);
+    --gutter-bg: rgba(15, 23, 42, 0.5);
+    --gutter-text: #64748b;
+    --gutter-border: #334155;
+    --diff-added-bg: rgba(16, 185, 129, 0.12);
+    --diff-added-segment: rgba(16, 185, 129, 0.28);
+    --diff-removed-bg: rgba(244, 63, 94, 0.12);
+    --diff-removed-segment: rgba(244, 63, 94, 0.28);
+    --diff-current-ring: #818cf8;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border-default: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-ring-default: var(--ring);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-gutter-bg: var(--gutter-bg);
+  --color-gutter-text: var(--gutter-text);
+  --color-gutter-border: var(--gutter-border);
+  --color-diff-added-bg: var(--diff-added-bg);
+  --color-diff-added-segment: var(--diff-added-segment);
+  --color-diff-removed-bg: var(--diff-removed-bg);
+  --color-diff-removed-segment: var(--diff-removed-segment);
+  --color-diff-current-ring: var(--diff-current-ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: light dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
 html,
 body {
   height: 100%;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }

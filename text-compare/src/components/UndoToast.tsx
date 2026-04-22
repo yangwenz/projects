@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Undo2 } from "lucide-react";
 
 interface UndoToastProps {
   visible: boolean;
@@ -18,12 +19,13 @@ export default function UndoToast({ visible, onUndo, onDismiss }: UndoToastProps
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50">
+    <div className="fixed bottom-4 right-4 bg-surface-raised border border-border-default text-foreground px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50">
       <span className="text-sm">Content cleared</span>
       <button
         onClick={onUndo}
-        className="text-sm font-medium text-blue-300 hover:text-blue-200"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent/80 transition-colors"
       >
+        <Undo2 size={14} />
         Undo
       </button>
     </div>

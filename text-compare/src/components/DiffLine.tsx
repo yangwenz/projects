@@ -24,11 +24,11 @@ export default function DiffLine({
 
   return (
     <div
-      className={`flex min-h-[1.5rem] ${lineBg} ${isCurrentChange ? "ring-2 ring-blue-400" : ""}`}
+      className={`flex min-h-[1.5rem] ${lineBg} ${isCurrentChange ? "ring-2 ring-inset ring-diff-current-ring" : ""}`}
     >
       <span
         ref={gutterRef}
-        className="w-12 shrink-0 text-right pr-2 text-xs text-gray-400 select-none border-r border-gray-200 leading-6"
+        className="w-12 shrink-0 text-right pr-2 text-xs text-gutter-text select-none border-r border-gutter-border bg-gutter-bg leading-6"
       >
         {lineNumber}
       </span>
@@ -47,8 +47,8 @@ function getLineBg(segments: DiffSegment[], side: "left" | "right"): string {
   const allSameType = segments.length >= 1 && segments.every((s) => s.type === segments[0].type);
   if (allSameType) {
     const type = segments[0].type;
-    if (type === "added" && side === "right") return "bg-green-50";
-    if (type === "removed" && side === "left") return "bg-red-50";
+    if (type === "added" && side === "right") return "bg-diff-added-bg";
+    if (type === "removed" && side === "left") return "bg-diff-removed-bg";
   }
   return "";
 }
@@ -58,14 +58,14 @@ function getSegmentClass(seg: DiffSegment, side: "left" | "right"): string {
     case "equal":
       return "";
     case "added":
-      return side === "right" ? "bg-green-200" : "";
+      return side === "right" ? "bg-diff-added-segment rounded-sm" : "";
     case "removed":
-      return side === "left" ? "bg-red-200" : "";
+      return side === "left" ? "bg-diff-removed-segment rounded-sm" : "";
     default:
       return "";
   }
 }
 
 function renderWhitespace(value: string): string {
-  return value.replace(/ /g, "·").replace(/\t/g, "→").replace(/\n/g, "¶\n");
+  return value.replace(/ /g, "\u00b7").replace(/\t/g, "\u2192").replace(/\n/g, "\u00b6\n");
 }

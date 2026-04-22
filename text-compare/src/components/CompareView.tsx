@@ -157,7 +157,7 @@ function CompareViewInner() {
     <div className="flex flex-col h-full">
       <Toolbar onSwap={handleSwap} onClear={handleClear} />
       <WarningBanner />
-      <div className="flex flex-1 gap-2 p-2 min-h-0 overflow-hidden">
+      <div className="flex flex-1 gap-3 p-3 min-h-0 overflow-hidden">
         <EditorPanel
           side="left"
           label={leftLabel}
@@ -168,7 +168,7 @@ function CompareViewInner() {
           chunks={chunks}
           currentChangeIndex={currentChangeIndex}
           showWhitespace={settings.showWhitespace}
-          placeholder="Paste original text here…"
+          placeholder="Paste original text here..."
           scrollRef={leftScrollRef}
           onScroll={handleLeftScroll}
         />
@@ -182,7 +182,7 @@ function CompareViewInner() {
           chunks={chunks}
           currentChangeIndex={currentChangeIndex}
           showWhitespace={settings.showWhitespace}
-          placeholder="Paste modified text here…"
+          placeholder="Paste modified text here..."
           scrollRef={rightScrollRef}
           onScroll={handleRightScroll}
         />

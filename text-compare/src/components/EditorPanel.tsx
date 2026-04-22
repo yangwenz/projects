@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState, useEffect } from "react";
 import DiffLine from "./DiffLine";
 import { validateFile, readFileAsText } from "@/lib/file-upload";
+import { Upload } from "lucide-react";
 import type { DiffChunk, DiffSegment } from "@/types/diff";
 
 interface EditorPanelProps {
@@ -111,22 +112,29 @@ export default function EditorPanel({
 
   return (
     <div
-      className={`flex-1 flex flex-col border rounded-lg overflow-hidden ${isDragging ? "ring-2 ring-blue-400 bg-blue-50" : "border-gray-300"}`}
+      className={`flex-1 flex flex-col rounded-lg overflow-hidden border transition-shadow ${
+        isDragging
+          ? "ring-2 ring-accent border-accent/40 shadow-lg"
+          : "border-border-default shadow-sm"
+      }`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
-      <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200">
-        <span className="text-sm font-medium text-gray-700">
+      <div className="flex items-center gap-2 px-3 py-2 bg-surface border-b border-border-default">
+        <span className="text-xs font-semibold uppercase tracking-wider text-foreground/40">
           {label}
         </span>
         {filename && (
-          <span className="text-xs text-gray-500 truncate">{filename}</span>
+          <span className="text-xs text-foreground/50 truncate font-mono">
+            {filename}
+          </span>
         )}
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="ml-auto text-xs px-2 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50"
+          className="ml-auto inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md text-foreground/50 hover:bg-border-subtle hover:text-foreground/70 transition-colors"
         >
+          <Upload size={12} />
           Upload
         </button>
         <input
@@ -141,18 +149,17 @@ export default function EditorPanel({
         />
       </div>
       {uploadError && (
-        <div className="px-3 py-1 bg-red-50 text-red-700 text-xs">
+        <div className="px-3 py-1.5 bg-diff-removed-bg text-red-600 dark:text-red-400 text-xs font-medium">
           {uploadError}
         </div>
       )}
-      <div className="relative flex-1 min-h-0">
+      <div className="relative flex-1 min-h-0 bg-surface">
         <div
           ref={scrollRef}
           onScroll={handleScrollEvent}
           className="absolute inset-0 overflow-auto"
         >
           <div className="relative">
-            {/* Highlight overlay with line numbers */}
             <div aria-hidden="true">
               {renderedLines.map((line, idx) => {
                 const chunkIdx = chunks.findIndex((c) => {
@@ -179,16 +186,14 @@ export default function EditorPanel({
                 );
               })}
             </div>
-            {/* Textarea aligned precisely over the text content area */}
             <textarea
-
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
                 setFilename(null);
               }}
               placeholder={placeholder}
-              className="absolute top-0 bottom-0 resize-none font-mono text-sm leading-6 pl-2 py-0 m-0 bg-transparent text-transparent caret-black z-10 outline-none border-none whitespace-pre-wrap break-all"
+              className="absolute top-0 bottom-0 resize-none font-mono text-sm leading-6 pl-2 py-0 m-0 bg-transparent text-transparent caret-foreground z-10 outline-none border-none whitespace-pre-wrap break-all"
               style={{
                 left: `${gutterWidth}px`,
                 width: `calc(100% - ${gutterWidth}px)`,
