@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# JSON Formatter
+
+A browser-based tool for formatting, validating, minifying, and exploring JSON data. Built with Next.js 16, React 19, and TypeScript. All processing happens client-side — nothing leaves your browser.
+
+## Features
+
+- **Format** — configurable indentation (2 spaces, 4 spaces, tabs) and optional key sorting (A-Z / Z-A)
+- **Validate** — real-time validation with line/column error reporting
+- **Minify** — one-click minification with before/after size comparison
+- **Code View** — syntax-highlighted output with line numbers
+- **Tree View** — collapsible hierarchy with click-to-copy JSON paths (e.g. `$.store.books[0].title`)
+- **File I/O** — upload, drag-and-drop, download, copy to clipboard
+- **Statistics** — input size, line count, key count, max nesting depth
+- **Settings** — indent size, key sort order, auto-format on paste, persisted in localStorage
+- **Responsive** — desktop (side-by-side), tablet/mobile (stacked), dark mode
+
+## Tech Stack
+
+- **Next.js 16** / **React 19** / **TypeScript 5**
+- **Tailwind CSS 4** for styling
+- **Web Worker** for off-main-thread JSON processing
+- **Jest 30** + **ts-jest** for testing
+- No external runtime dependencies beyond React and Next.js
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm start` | Serve production build |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run Jest tests |
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+  app/
+    page.tsx                 # Main component, orchestrates all state
+    layout.tsx               # Next.js layout
+  components/                # UI components (Header, Toolbar, InputPanel, OutputPanel, etc.)
+  contexts/
+    SettingsContext.tsx       # Settings via React Context + localStorage
+  hooks/
+    useJsonWorker.ts         # Worker lifecycle, message passing, debounce
+    useFileHandler.ts        # File upload, download, drag-and-drop
+  lib/
+    json-engine.ts           # Pure functions: validate, format, minify, stats
+    syntax-highlight.ts      # Hand-written tokenizer for code view
+    tree-builder.ts          # Builds collapsible TreeNode structure
+    types.ts                 # Shared TypeScript types (discriminated unions)
+  workers/
+    json.worker.ts           # Web Worker entry point
+  __tests__/                 # Unit tests for lib/ modules
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+All components use `"use client"` — there is no server-side logic.
 
-## Deploy on Vercel
+**Data flow:** User input -> 300ms debounce -> Web Worker (json-engine + syntax-highlight) -> structured result -> React renders Code View, Tree View, and stats.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Worker messages use discriminated unions (`WorkerRequest` / `WorkerResponse`) keyed on `type` (`"format"` | `"minify"` | `"error"`), with a unique `id` for correlation.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Testing
+
+Tests cover pure functions in `src/lib/` (json-engine, syntax-highlight, tree-builder). Components are validated through manual browser testing.
+
+```bash
+npm test
+npx jest src/__tests__/json-engine.test.ts   # single file
+```
+
+## License
+
+MIT
