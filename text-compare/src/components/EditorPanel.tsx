@@ -34,7 +34,7 @@ export default function EditorPanel({
   const [gutterWidth, setGutterWidth] = useState(49);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const gutterRef = useRef<HTMLSpanElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
 
   useEffect(() => {
     if (!gutterRef.current) return;
@@ -90,11 +90,8 @@ export default function EditorPanel({
   const handleScrollEvent = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
       onScroll(e.currentTarget.scrollTop);
-      if (textareaRef.current && scrollRef.current) {
-        textareaRef.current.style.top = `${scrollRef.current.scrollTop}px`;
-      }
     },
-    [onScroll, scrollRef]
+    [onScroll]
   );
 
   const lines = text.split("\n");
@@ -176,7 +173,7 @@ export default function EditorPanel({
             </div>
             {/* Textarea aligned precisely over the text content area */}
             <textarea
-              ref={textareaRef}
+
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
