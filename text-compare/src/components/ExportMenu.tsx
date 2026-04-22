@@ -7,6 +7,14 @@ import {
   generatePlainTextDiff,
   generateHtmlDiff,
 } from "@/lib/export";
+import {
+  Download,
+  ClipboardCopy,
+  FileText,
+  FileCode,
+  Globe,
+  ChevronDown,
+} from "lucide-react";
 
 export default function ExportMenu() {
   const { chunks, leftText, rightText } = useDiff();
@@ -51,34 +59,40 @@ export default function ExportMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors"
       >
-        Export ▾
+        <Download size={14} />
+        Export
+        <ChevronDown size={12} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+        <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
           <button
             onClick={handleCopyClipboard}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors"
           >
+            <ClipboardCopy size={14} className="text-gray-400" />
             Copy to clipboard
           </button>
           <button
             onClick={handleDownloadDiff}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors"
           >
+            <FileCode size={14} className="text-gray-400" />
             Download as .diff
           </button>
           <button
             onClick={handleDownloadTxt}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors"
           >
+            <FileText size={14} className="text-gray-400" />
             Download as .txt
           </button>
           <button
             onClick={handleDownloadHtml}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors"
           >
+            <Globe size={14} className="text-gray-400" />
             Download as .html
           </button>
         </div>

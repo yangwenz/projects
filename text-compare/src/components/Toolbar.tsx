@@ -4,6 +4,14 @@ import { useDiff } from "@/context/DiffContext";
 import ExportMenu from "./ExportMenu";
 import SettingsPopover from "./SettingsPopover";
 import type { DiffMode } from "@/types/diff";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeftRight,
+  Link,
+  Unlink,
+  Trash2,
+} from "lucide-react";
 
 interface ToolbarProps {
   onSwap: () => void;
@@ -32,15 +40,16 @@ export default function Toolbar({ onSwap, onClear }: ToolbarProps) {
     <div className="flex flex-wrap items-center gap-3 px-4 py-2 bg-white border-b border-gray-200">
       <span className="text-lg font-semibold text-gray-800">Text Comparer</span>
 
-      <div className="flex rounded-md border border-gray-300 overflow-hidden ml-4">
+      {/* Segmented control for diff mode */}
+      <div className="flex bg-gray-100 rounded-lg p-0.5 ml-4">
         {MODES.map((m) => (
           <button
             key={m.value}
             onClick={() => setMode(m.value)}
-            className={`px-3 py-1 text-sm ${
+            className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${
               mode === m.value
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-700 hover:bg-gray-100"
+                ? "bg-white text-blue-700 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
             }`}
           >
             {m.label}
@@ -48,15 +57,17 @@ export default function Toolbar({ onSwap, onClear }: ToolbarProps) {
         ))}
       </div>
 
+      {/* Navigation */}
       <div className="flex items-center gap-1 ml-4">
         <button
           onClick={goToPrev}
           disabled={totalChanges === 0}
-          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50"
+          className="p-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+          title="Previous change"
         >
-          ◀ Prev
+          <ChevronLeft size={16} />
         </button>
-        <span className="text-sm text-gray-600 min-w-[3rem] text-center">
+        <span className="text-sm text-gray-600 min-w-[3.5rem] text-center tabular-nums">
           {totalChanges > 0
             ? `${currentChangeIndex + 1} / ${totalChanges}`
             : "0 / 0"}
@@ -64,37 +75,42 @@ export default function Toolbar({ onSwap, onClear }: ToolbarProps) {
         <button
           onClick={goToNext}
           disabled={totalChanges === 0}
-          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50"
+          className="p-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+          title="Next change"
         >
-          Next ▶
+          <ChevronRight size={16} />
         </button>
       </div>
 
-      <div className="flex items-center gap-2 ml-auto">
+      {/* Actions */}
+      <div className="flex items-center gap-1.5 ml-auto">
         <button
           onClick={() => setSyncScroll(!syncScroll)}
-          className={`px-2 py-1 text-sm border rounded ${
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium rounded-md border transition-colors ${
             syncScroll
-              ? "border-blue-400 bg-blue-50 text-blue-700"
-              : "border-gray-300 text-gray-600 hover:bg-gray-100"
+              ? "border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 active:bg-blue-150"
+              : "border-gray-300 text-gray-600 hover:bg-gray-100 active:bg-gray-200"
           }`}
           title="Toggle scroll sync"
         >
-          ⇅ Sync
+          {syncScroll ? <Link size={14} /> : <Unlink size={14} />}
+          Sync
         </button>
         <button
           onClick={onSwap}
-          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors"
           title="Swap panels"
         >
-          ⇄ Swap
+          <ArrowLeftRight size={14} />
+          Swap
         </button>
         <button
           onClick={onClear}
-          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors"
           title="Clear both panels"
         >
-          ✕ Clear
+          <Trash2 size={14} />
+          Clear
         </button>
         <ExportMenu />
         <SettingsPopover />

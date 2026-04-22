@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useDiff } from "@/context/DiffContext";
+import { Settings } from "lucide-react";
 
 export default function SettingsPopover() {
   const { settings, updateSettings } = useDiff();
@@ -29,10 +30,10 @@ export default function SettingsPopover() {
     <div className="relative" ref={popoverRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+        className="p-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors"
         title="Settings"
       >
-        ⚙
+        <Settings size={16} />
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-3">
