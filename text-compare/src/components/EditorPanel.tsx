@@ -61,16 +61,18 @@ export default function EditorPanel({
         setUploadError(validation.error ?? "Invalid file");
         return;
       }
+      let content: string;
       try {
-        const content = await readFileAsText(file);
-        setText(content);
-        setFilename(file.name);
-        setUploadError(null);
+        content = await readFileAsText(file);
       } catch {
         setUploadError("Failed to read file");
+        return;
       }
+      setText(content);
+      setFilename(file.name);
+      setUploadError(null);
     },
-    [setText]
+    [setText, setFilename]
   );
 
   const handleDrop = useCallback(
