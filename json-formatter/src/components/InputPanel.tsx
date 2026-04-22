@@ -79,8 +79,10 @@ export default function InputPanel({
       onDragLeave={() => setIsDragOver(false)}
     >
       {isDragOver && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-blue-50/80 border-2 border-dashed border-blue-300 rounded-md">
-          <span className="text-blue-600 font-medium">Drop JSON file here</span>
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-blue-300 bg-blue-50/80 dark:border-blue-600 dark:bg-blue-950/80">
+          <span className="text-sm font-medium text-blue-600 dark:text-blue-300">
+            Drop JSON file here
+          </span>
         </div>
       )}
       <div
@@ -99,14 +101,14 @@ export default function InputPanel({
         ))}
       </div>
       <div className="flex flex-1 overflow-auto font-mono text-sm">
-        <div className="select-none bg-zinc-50 px-2 py-3 text-right text-zinc-400 leading-5">
+        <div className="select-none border-r border-zinc-100 bg-zinc-50/50 px-2 py-3 text-right text-zinc-400 leading-5 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-600">
           {lineNumbers.map((n, i) => (
             <div
               key={n}
               style={lineHeights[i] ? { height: lineHeights[i] } : undefined}
               className={`px-1 ${
                 errorLine === n
-                  ? "bg-red-100 text-red-500 rounded"
+                  ? "rounded bg-red-100 text-red-500 dark:bg-red-950 dark:text-red-400"
                   : ""
               }`}
             >
@@ -123,7 +125,7 @@ export default function InputPanel({
               setTimeout(onPaste, 0);
             }
           }}
-          className="flex-1 resize-none bg-white p-3 leading-5 outline-none"
+          className="flex-1 resize-none bg-white p-3 leading-5 outline-none placeholder:text-zinc-400 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600"
           placeholder="Paste or type JSON here..."
           spellCheck={false}
         />

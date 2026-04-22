@@ -158,7 +158,7 @@ function JsonFormatterApp() {
         isMinified={isMinified}
       />
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
-        <div className="flex flex-1 flex-col overflow-hidden border-r border-zinc-200">
+        <div className="flex flex-1 flex-col overflow-hidden border-b border-zinc-200 md:border-b-0 md:border-r dark:border-zinc-800">
           <InputPanel
             value={input}
             onChange={handleInputChange}

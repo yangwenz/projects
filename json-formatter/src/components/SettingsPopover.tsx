@@ -21,10 +21,10 @@ function OptionButton({
   return (
     <button
       onClick={onClick}
-      className={`rounded px-2.5 py-1 text-sm transition-colors ${
+      className={`rounded-md px-2.5 py-1 text-sm transition-colors ${
         active
-          ? "bg-blue-100 text-blue-700 font-medium"
-          : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+          ? "bg-blue-100 font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+          : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
       }`}
     >
       {children}
@@ -32,7 +32,10 @@ function OptionButton({
   );
 }
 
-export default function SettingsPopover({ open, onClose }: SettingsPopoverProps) {
+export default function SettingsPopover({
+  open,
+  onClose,
+}: SettingsPopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { settings, setIndent, setSortKeys, setAutoFormatOnPaste } =
     useSettingsContext();
@@ -75,12 +78,14 @@ export default function SettingsPopover({ open, onClose }: SettingsPopoverProps)
   return (
     <div
       ref={ref}
-      className="absolute right-4 top-14 z-40 w-72 rounded-lg border border-zinc-200 bg-white p-4 shadow-lg"
+      className="absolute right-4 top-14 z-40 w-72 rounded-xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-700 dark:bg-zinc-900"
     >
-      <h3 className="mb-3 text-sm font-semibold text-zinc-800">Settings</h3>
+      <h3 className="mb-4 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+        Settings
+      </h3>
 
       <div className="mb-3">
-        <label className="mb-1.5 block text-xs font-medium text-zinc-500">
+        <label className="mb-1.5 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
           Indent
         </label>
         <div className="flex gap-1.5">
@@ -97,7 +102,7 @@ export default function SettingsPopover({ open, onClose }: SettingsPopoverProps)
       </div>
 
       <div className="mb-3">
-        <label className="mb-1.5 block text-xs font-medium text-zinc-500">
+        <label className="mb-1.5 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
           Sort keys
         </label>
         <div className="flex gap-1.5">
@@ -114,13 +119,15 @@ export default function SettingsPopover({ open, onClose }: SettingsPopoverProps)
       </div>
 
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-zinc-500">
+        <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
           Auto-format on paste
         </label>
         <button
           onClick={() => setAutoFormatOnPaste(!settings.autoFormatOnPaste)}
           className={`relative h-5 w-9 rounded-full transition-colors ${
-            settings.autoFormatOnPaste ? "bg-blue-500" : "bg-zinc-300"
+            settings.autoFormatOnPaste
+              ? "bg-blue-500 dark:bg-blue-600"
+              : "bg-zinc-300 dark:bg-zinc-600"
           }`}
         >
           <span

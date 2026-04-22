@@ -30,29 +30,29 @@ export default function TreeView({ parsed, onCopyPath }: TreeViewProps) {
 
   if (!tree) {
     return (
-      <div className="flex flex-1 items-center justify-center text-zinc-400 text-sm">
+      <div className="flex flex-1 items-center justify-center text-sm text-zinc-400 dark:text-zinc-600">
         No valid JSON to display
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-auto">
-      <div className="flex items-center gap-2 border-b border-zinc-100 px-3 py-1.5">
+    <div className="flex flex-1 flex-col overflow-auto bg-white dark:bg-zinc-900">
+      <div className="flex items-center gap-2 border-b border-zinc-100 px-3 py-1.5 dark:border-zinc-800">
         <button
           onClick={expandAll}
-          className="rounded px-2 py-0.5 text-xs text-zinc-600 hover:bg-zinc-100"
+          className="rounded-md px-2 py-0.5 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
         >
           Expand All
         </button>
         <button
           onClick={collapseAll}
-          className="rounded px-2 py-0.5 text-xs text-zinc-600 hover:bg-zinc-100"
+          className="rounded-md px-2 py-0.5 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
         >
           Collapse All
         </button>
       </div>
-      <div className="flex-1 overflow-auto p-2 text-sm">
+      <div className="flex-1 overflow-auto p-3 text-sm">
         <TreeNodeComponent
           key={expandKey}
           node={tree}

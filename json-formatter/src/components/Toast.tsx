@@ -19,7 +19,7 @@ export default function Toast({ message, visible, onHide }: ToastProps) {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-zinc-800 px-4 py-2 text-sm text-white shadow-lg">
+    <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-zinc-800 px-4 py-2.5 text-sm text-white shadow-xl ring-1 ring-white/10 dark:bg-zinc-700">
       {message}
     </div>
   );

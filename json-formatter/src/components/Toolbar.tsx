@@ -33,13 +33,20 @@ function ToolbarButton({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm font-medium shadow-sm transition-colors ${
+      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium shadow-sm transition-all ${
         active
-          ? "border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 active:bg-blue-200"
-          : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 active:bg-zinc-100"
+          ? "border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 active:bg-blue-200 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900 dark:active:bg-blue-800"
+          : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-zinc-100 dark:active:bg-zinc-600"
       }`}
     >
-      <Icon size={14} className={active ? "text-blue-500" : "text-zinc-400"} />
+      <Icon
+        size={14}
+        className={
+          active
+            ? "text-blue-500 dark:text-blue-400"
+            : "text-zinc-400 dark:text-zinc-500"
+        }
+      />
       {label}
     </button>
   );
@@ -55,7 +62,7 @@ export default function Toolbar({
   isMinified,
 }: ToolbarProps) {
   return (
-    <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-4 py-2">
+    <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50/80 px-5 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/50">
       <div className="flex items-center gap-1.5">
         <ToolbarButton onClick={onUpload} icon={Upload} label="Upload" />
         <ToolbarButton onClick={onPaste} icon={ClipboardPaste} label="Paste" />

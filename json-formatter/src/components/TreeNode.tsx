@@ -4,12 +4,15 @@ import { useState, useCallback } from "react";
 import { TreeNode as TreeNodeType } from "@/lib/types";
 
 const typeBadgeColors: Record<string, string> = {
-  string: "bg-green-100 text-green-700",
-  number: "bg-blue-100 text-blue-700",
-  boolean: "bg-orange-100 text-orange-700",
-  null: "bg-red-100 text-red-600",
-  object: "bg-purple-100 text-purple-700",
-  array: "bg-yellow-100 text-yellow-700",
+  string: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+  number: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
+  boolean:
+    "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
+  null: "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400",
+  object:
+    "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400",
+  array:
+    "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
 };
 
 interface TreeNodeProps {
@@ -43,7 +46,7 @@ export default function TreeNodeComponent({
   return (
     <div className="ml-4">
       <div
-        className="group flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-zinc-100 cursor-pointer"
+        className="group flex cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-800"
         onClick={handleClick}
       >
         {hasChildren ? (
@@ -52,7 +55,7 @@ export default function TreeNodeComponent({
               e.stopPropagation();
               setExpanded(!expanded);
             }}
-            className="flex h-4 w-4 items-center justify-center text-zinc-400 hover:text-zinc-600"
+            className="flex h-4 w-4 items-center justify-center text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -71,27 +74,29 @@ export default function TreeNodeComponent({
           <span className="w-4" />
         )}
 
-        <span className="text-sm font-medium text-zinc-700">{node.key}</span>
+        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          {node.key}
+        </span>
 
         <span
-          className={`rounded px-1 py-0.5 text-xs ${typeBadgeColors[node.type] ?? ""}`}
+          className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${typeBadgeColors[node.type] ?? ""}`}
         >
           {node.type}
         </span>
 
         {hasChildren && !expanded && (
-          <span className="text-xs text-zinc-400">
+          <span className="text-xs text-zinc-400 dark:text-zinc-600">
             {node.type === "array" ? `[${childCount}]` : `{${childCount}}`}
           </span>
         )}
 
         {!hasChildren && node.value !== undefined && (
-          <span className="text-sm text-zinc-500 truncate max-w-xs">
+          <span className="max-w-xs truncate text-sm text-zinc-500 dark:text-zinc-400">
             {formatValue(node.value)}
           </span>
         )}
 
-        <span className="ml-auto hidden text-xs text-zinc-400 group-hover:inline">
+        <span className="ml-auto hidden text-xs text-zinc-400 group-hover:inline dark:text-zinc-600">
           click to copy path
         </span>
       </div>
