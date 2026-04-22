@@ -1,6 +1,7 @@
 "use client";
 
 import type { DiffSegment } from "@/types/diff";
+import type { RefObject } from "react";
 
 interface DiffLineProps {
   lineNumber: number;
@@ -8,6 +9,7 @@ interface DiffLineProps {
   side: "left" | "right";
   isCurrentChange?: boolean;
   showWhitespace?: boolean;
+  gutterRef?: RefObject<HTMLSpanElement | null>;
 }
 
 export default function DiffLine({
@@ -16,6 +18,7 @@ export default function DiffLine({
   side,
   isCurrentChange,
   showWhitespace,
+  gutterRef,
 }: DiffLineProps) {
   const lineBg = getLineBg(segments, side);
 
@@ -23,10 +26,13 @@ export default function DiffLine({
     <div
       className={`flex min-h-[1.5rem] ${lineBg} ${isCurrentChange ? "ring-2 ring-blue-400" : ""}`}
     >
-      <span className="w-12 shrink-0 text-right pr-2 text-xs text-gray-400 select-none border-r border-gray-200 leading-6">
+      <span
+        ref={gutterRef}
+        className="w-12 shrink-0 text-right pr-2 text-xs text-gray-400 select-none border-r border-gray-200 leading-6"
+      >
         {lineNumber}
       </span>
-      <span className="pl-2 whitespace-pre-wrap break-all font-mono text-sm leading-6 flex-1">
+      <span className="pl-2 whitespace-pre-wrap break-all font-mono text-sm leading-6 flex-1 min-w-0">
         {segments.map((seg, i) => (
           <span key={i} className={getSegmentClass(seg, side)}>
             {showWhitespace ? renderWhitespace(seg.value) : seg.value}

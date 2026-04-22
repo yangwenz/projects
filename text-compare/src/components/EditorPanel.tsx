@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import DiffLine from "./DiffLine";
 import { validateFile, readFileAsText } from "@/lib/file-upload";
 import type { DiffChunk, DiffSegment } from "@/types/diff";
@@ -31,7 +31,23 @@ export default function EditorPanel({
   const [filename, setFilename] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [gutterWidth, setGutterWidth] = useState(49);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const gutterRef = useRef<HTMLSpanElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!gutterRef.current) return;
+    const measure = () => {
+      if (gutterRef.current) {
+        setGutterWidth(gutterRef.current.getBoundingClientRect().width);
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(gutterRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   const handleFileUpload = useCallback(
     async (file: File) => {
@@ -70,6 +86,16 @@ export default function EditorPanel({
   const handleDragLeave = useCallback(() => {
     setIsDragging(false);
   }, []);
+
+  const handleScrollEvent = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      onScroll(e.currentTarget.scrollTop);
+      if (textareaRef.current && scrollRef.current) {
+        textareaRef.current.style.top = `${scrollRef.current.scrollTop}px`;
+      }
+    },
+    [onScroll, scrollRef]
+  );
 
   const lines = text.split("\n");
   const renderedLines = buildRenderedLines(lines, chunks, side);
@@ -115,45 +141,57 @@ export default function EditorPanel({
         </div>
       )}
       <div className="relative flex-1 min-h-0">
-        <textarea
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            setFilename(null);
-          }}
-          placeholder={placeholder}
-          className="absolute inset-0 w-full h-full resize-none font-mono text-sm p-2 pl-14 leading-6 bg-transparent text-transparent caret-black z-10 outline-none"
-          spellCheck={false}
-        />
         <div
           ref={scrollRef}
-          onScroll={(e) => onScroll(e.currentTarget.scrollTop)}
-          className="absolute inset-0 overflow-auto pointer-events-none"
+          onScroll={handleScrollEvent}
+          className="absolute inset-0 overflow-auto"
         >
-          <div className="min-h-full">
-            {renderedLines.map((line, idx) => {
-              const chunkIdx = chunks.findIndex((c) => {
-                const start =
-                  side === "left" ? c.leftLineStart : c.rightLineStart;
-                const count =
-                  side === "left" ? c.leftLineCount : c.rightLineCount;
-                return idx >= start && idx < start + count;
-              });
-              const isCurrentChunk =
-                chunkIdx === currentChangeIndex &&
-                chunkIdx !== -1 &&
-                isChunkOnSide(chunks[chunkIdx], side);
-              return (
-                <DiffLine
-                  key={idx}
-                  lineNumber={idx + 1}
-                  segments={line}
-                  side={side}
-                  isCurrentChange={isCurrentChunk}
-                  showWhitespace={showWhitespace}
-                />
-              );
-            })}
+          <div className="relative">
+            {/* Highlight overlay with line numbers */}
+            <div aria-hidden="true">
+              {renderedLines.map((line, idx) => {
+                const chunkIdx = chunks.findIndex((c) => {
+                  const start =
+                    side === "left" ? c.leftLineStart : c.rightLineStart;
+                  const count =
+                    side === "left" ? c.leftLineCount : c.rightLineCount;
+                  return idx >= start && idx < start + count;
+                });
+                const isCurrentChunk =
+                  chunkIdx === currentChangeIndex &&
+                  chunkIdx !== -1 &&
+                  isChunkOnSide(chunks[chunkIdx], side);
+                return (
+                  <DiffLine
+                    key={idx}
+                    lineNumber={idx + 1}
+                    segments={line}
+                    side={side}
+                    isCurrentChange={isCurrentChunk}
+                    showWhitespace={showWhitespace}
+                    gutterRef={idx === 0 ? gutterRef : undefined}
+                  />
+                );
+              })}
+            </div>
+            {/* Textarea aligned precisely over the text content area */}
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                setFilename(null);
+              }}
+              placeholder={placeholder}
+              className="absolute top-0 bottom-0 resize-none font-mono text-sm leading-6 pl-2 py-0 m-0 bg-transparent text-transparent caret-black z-10 outline-none border-none whitespace-pre-wrap break-all"
+              style={{
+                left: `${gutterWidth}px`,
+                width: `calc(100% - ${gutterWidth}px)`,
+                height: `${renderedLines.length * 24}px`,
+                minHeight: "100%",
+              }}
+              spellCheck={false}
+            />
           </div>
         </div>
       </div>
