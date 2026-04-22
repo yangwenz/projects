@@ -36,6 +36,7 @@ interface DiffContextValue {
   totalChanges: number;
   goToNext: () => void;
   goToPrev: () => void;
+  navigationTrigger: number;
   syncScroll: boolean;
   setSyncScroll: (enabled: boolean) => void;
   isComputing: boolean;
@@ -63,6 +64,7 @@ export function DiffProvider({ children }: { children: ReactNode }) {
   const [currentChangeIndex, setCurrentChangeIndex] = useState(0);
   const [syncScroll, setSyncScroll] = useState(true);
   const [isComputing, setIsComputing] = useState(false);
+  const [navigationTrigger, setNavigationTrigger] = useState(0);
 
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
@@ -135,11 +137,13 @@ export function DiffProvider({ children }: { children: ReactNode }) {
   const goToNext = useCallback(() => {
     if (totalChanges === 0) return;
     setCurrentChangeIndex((prev) => (prev + 1) % totalChanges);
+    setNavigationTrigger((n) => n + 1);
   }, [totalChanges]);
 
   const goToPrev = useCallback(() => {
     if (totalChanges === 0) return;
     setCurrentChangeIndex((prev) => (prev - 1 + totalChanges) % totalChanges);
+    setNavigationTrigger((n) => n + 1);
   }, [totalChanges]);
 
   return (
@@ -161,6 +165,7 @@ export function DiffProvider({ children }: { children: ReactNode }) {
         totalChanges,
         goToNext,
         goToPrev,
+        navigationTrigger,
         syncScroll,
         setSyncScroll,
         isComputing,

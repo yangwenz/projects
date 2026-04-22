@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { DiffProvider, useDiff } from "@/context/DiffContext";
 import EditorPanel from "./EditorPanel";
 import Toolbar from "./Toolbar";
@@ -27,6 +27,7 @@ function CompareViewInner() {
     currentChangeIndex,
     settings,
     syncScroll,
+    navigationTrigger,
   } = useDiff();
 
   const [showToast, setShowToast] = useState(false);
@@ -119,6 +120,31 @@ function CompareViewInner() {
     },
     [syncScroll, anchors, leftText, rightText]
   );
+
+  useEffect(() => {
+    if (chunks.length === 0) return;
+    const chunk = chunks[currentChangeIndex];
+    if (!chunk) return;
+
+    const lineHeight = 24;
+
+    if (leftScrollRef.current) {
+      const container = leftScrollRef.current;
+      const lineTop = chunk.leftLineStart * lineHeight;
+      const chunkHeight = chunk.leftLineCount * lineHeight;
+      const target = lineTop + chunkHeight / 2 - container.clientHeight / 2;
+      container.scrollTop = Math.max(0, target);
+    }
+
+    if (rightScrollRef.current) {
+      const container = rightScrollRef.current;
+      const lineTop = chunk.rightLineStart * lineHeight;
+      const chunkHeight = chunk.rightLineCount * lineHeight;
+      const target = lineTop + chunkHeight / 2 - container.clientHeight / 2;
+      container.scrollTop = Math.max(0, target);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigationTrigger]);
 
   return (
     <div className="flex flex-col h-full">
