@@ -76,13 +76,50 @@ function computeLineDiff(
   let leftLine = 0;
   let rightLine = 0;
 
-  for (const change of changes) {
+  let i = 0;
+  while (i < changes.length) {
+    const change = changes[i];
     const lines = change.value.replace(/\n$/, "").split("\n");
     const lineCount = change.count ?? lines.length;
 
     if (!change.added && !change.removed) {
       leftLine += lineCount;
       rightLine += lineCount;
+      i++;
+    } else if (
+      change.removed &&
+      i + 1 < changes.length &&
+      changes[i + 1].added
+    ) {
+      const removedLines = lines;
+      const removedCount = lineCount;
+      const addedChange = changes[i + 1];
+      const addedLines = addedChange.value.replace(/\n$/, "").split("\n");
+      const addedCount = addedChange.count ?? addedLines.length;
+
+      const segments: DiffSegment[] = [
+        ...removedLines.map((line) => ({
+          value: line,
+          type: "removed" as const,
+        })),
+        ...addedLines.map((line) => ({
+          value: line,
+          type: "added" as const,
+        })),
+      ];
+
+      chunks.push({
+        leftLineStart: leftLine,
+        leftLineCount: removedCount,
+        rightLineStart: rightLine,
+        rightLineCount: addedCount,
+        segments,
+      });
+      stats.deletions += removedCount;
+      stats.additions += addedCount;
+      leftLine += removedCount;
+      rightLine += addedCount;
+      i += 2;
     } else if (change.added) {
       const segments: DiffSegment[] = lines.map((line) => ({
         value: line,
@@ -97,7 +134,8 @@ function computeLineDiff(
       });
       stats.additions += lineCount;
       rightLine += lineCount;
-    } else if (change.removed) {
+      i++;
+    } else {
       const segments: DiffSegment[] = lines.map((line) => ({
         value: line,
         type: "removed" as const,
@@ -111,6 +149,7 @@ function computeLineDiff(
       });
       stats.deletions += lineCount;
       leftLine += lineCount;
+      i++;
     }
   }
 

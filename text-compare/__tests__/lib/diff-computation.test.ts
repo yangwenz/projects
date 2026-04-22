@@ -26,8 +26,8 @@ describe("computeDiff", () => {
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
       expect(result.chunks.length).toBeGreaterThan(0);
-      const addedChunk = result.chunks.find((c) => c.rightLineCount > 0 && c.leftLineCount === 0);
-      expect(addedChunk).toBeDefined();
+      const chunkWithAdds = result.chunks.find((c) => c.rightLineCount > 0);
+      expect(chunkWithAdds).toBeDefined();
       expect(result.stats.additions).toBeGreaterThan(0);
     }
   });
@@ -40,8 +40,8 @@ describe("computeDiff", () => {
     });
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
-      const removedChunk = result.chunks.find((c) => c.leftLineCount > 0 && c.rightLineCount === 0);
-      expect(removedChunk).toBeDefined();
+      const chunkWithRemovals = result.chunks.find((c) => c.leftLineCount > 0);
+      expect(chunkWithRemovals).toBeDefined();
       expect(result.stats.deletions).toBeGreaterThan(0);
     }
   });
