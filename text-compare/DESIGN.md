@@ -60,7 +60,7 @@
 │  │   │                 │ │ │ 5 │ unchanged          │ │
 │  └─────────────────────┘ │ └────────────────────────┘ │
 ├──────────────────────────┴────────────────────────────┤
-│  +3 additions  -1 deletion  ~2 modifications  │ 12L   │
+│  +3 additions  -1 deletions                   │ 12L   │
 └───────────────────────────────────────────────────────┘
 ```
 
@@ -71,9 +71,9 @@ The warning banner is hidden by default and only appears when the worker returns
 Each `EditorPanel` renders its content as a list of line elements. Highlighting is applied via `<span>` elements with background classes:
 
 - **Line mode**: Entire line gets `bg-diff-added` or `bg-diff-removed`. Each chunk segment has type `"added"`, `"removed"`, or `"equal"` — one segment per line.
-- **Word/Char mode**: The line is split into fine-grained segments. Each segment is wrapped in a span: unchanged (`"equal"`, no class), added (`"added"`, `bg-diff-added`), removed (`"removed"`, `bg-diff-removed`), or modified (`"modified"`, `bg-diff-modified` — yellow background for content that changed between sides).
+- **Word/Char mode**: The line is split into fine-grained segments. Each segment is wrapped in a span: unchanged (`"equal"`, no class), added (`"added"`, `bg-diff-added`), or removed (`"removed"`, `bg-diff-removed`). Only the changed words or characters are highlighted, not the entire line.
 
-The left panel renders `"removed"` and `"modified"` highlights; the right panel renders `"added"` and `"modified"` highlights. `"equal"` segments render unstyled on both sides.
+The left panel filters and renders `"equal"` and `"removed"` segments; the right panel filters and renders `"equal"` and `"added"` segments.
 
 ### Interactions
 
@@ -165,7 +165,7 @@ interface DiffRequest {
 
 interface DiffSegment {
   value: string;
-  type: "equal" | "added" | "removed" | "modified";
+  type: "equal" | "added" | "removed";
 }
 
 interface DiffChunk {
@@ -175,8 +175,8 @@ interface DiffChunk {
   rightLineCount: number;
   // In Line mode: one segment per line (type is "added", "removed", or "equal")
   // In Word/Char mode: fine-grained segments within the chunk.
-  //   "modified" marks content that changed between sides (adjacent remove+add
-  //   pairs are merged into a single "modified" segment for each side).
+  //   Changed content is represented as separate "removed" and "added" segments
+  //   (never merged). Each panel filters to show only its relevant segments.
   segments: DiffSegment[];
 }
 
@@ -186,7 +186,6 @@ interface DiffResponse {
   stats: {
     additions: number;
     deletions: number;
-    modifications: number;
   };
 }
 
