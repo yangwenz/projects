@@ -7,8 +7,11 @@ import type { DiffChunk, DiffSegment } from "@/types/diff";
 
 interface EditorPanelProps {
   side: "left" | "right";
+  label: string;
   text: string;
   setText: (text: string) => void;
+  filename: string | null;
+  setFilename: (name: string | null) => void;
   chunks: DiffChunk[];
   currentChangeIndex: number;
   showWhitespace: boolean;
@@ -19,8 +22,11 @@ interface EditorPanelProps {
 
 export default function EditorPanel({
   side,
+  label,
   text,
   setText,
+  filename,
+  setFilename,
   chunks,
   currentChangeIndex,
   showWhitespace,
@@ -28,7 +34,6 @@ export default function EditorPanel({
   scrollRef,
   onScroll,
 }: EditorPanelProps) {
-  const [filename, setFilename] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [gutterWidth, setGutterWidth] = useState(49);
@@ -111,7 +116,7 @@ export default function EditorPanel({
     >
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200">
         <span className="text-sm font-medium text-gray-700">
-          {side === "left" ? "Original" : "Modified"}
+          {label}
         </span>
         {filename && (
           <span className="text-xs text-gray-500 truncate">{filename}</span>

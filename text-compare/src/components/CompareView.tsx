@@ -31,6 +31,10 @@ function CompareViewInner() {
   } = useDiff();
 
   const [showToast, setShowToast] = useState(false);
+  const [leftLabel, setLeftLabel] = useState("Original");
+  const [rightLabel, setRightLabel] = useState("Modified");
+  const [leftFilename, setLeftFilename] = useState<string | null>(null);
+  const [rightFilename, setRightFilename] = useState<string | null>(null);
   const previousContentRef = useRef<{ left: string; right: string } | null>(
     null
   );
@@ -39,10 +43,13 @@ function CompareViewInner() {
   const scrollGuardRef = useRef(false);
 
   const handleSwap = useCallback(() => {
-    const tmp = leftText;
     setLeftText(rightText);
-    setRightText(tmp);
-  }, [leftText, rightText, setLeftText, setRightText]);
+    setRightText(leftText);
+    setLeftLabel(rightLabel);
+    setRightLabel(leftLabel);
+    setLeftFilename(rightFilename);
+    setRightFilename(leftFilename);
+  }, [leftText, rightText, setLeftText, setRightText, leftLabel, rightLabel, leftFilename, rightFilename]);
 
   const handleClear = useCallback(() => {
     if (leftText || rightText) {
@@ -153,8 +160,11 @@ function CompareViewInner() {
       <div className="flex flex-1 gap-2 p-2 min-h-0 overflow-hidden">
         <EditorPanel
           side="left"
+          label={leftLabel}
           text={leftText}
           setText={setLeftText}
+          filename={leftFilename}
+          setFilename={setLeftFilename}
           chunks={chunks}
           currentChangeIndex={currentChangeIndex}
           showWhitespace={settings.showWhitespace}
@@ -164,8 +174,11 @@ function CompareViewInner() {
         />
         <EditorPanel
           side="right"
+          label={rightLabel}
           text={rightText}
           setText={setRightText}
+          filename={rightFilename}
+          setFilename={setRightFilename}
           chunks={chunks}
           currentChangeIndex={currentChangeIndex}
           showWhitespace={settings.showWhitespace}
